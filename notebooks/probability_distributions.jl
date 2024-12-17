@@ -114,7 +114,7 @@ end
 begin
 	function plot_samples_v_dist(samples, dist; xlims=(-4, 4), ylims=(0, 0.6), cbins=theblue, cdist=:lime, nbins=35)
 		b_range = range(xlims[1], xlims[2], length=nbins)
-		p = histogram(samples, normalize=:pdf, legend=false, xlims=xlims, ylims=ylims, c=cbins, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="x", ylabel="p(x)", bins=b_range)
+		p = histogram(samples, normalize=:pdf, legend=false, xlims=xlims, ylims=ylims, c=cbins, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="\$x\$", ylabel="\$p(x)\$", bins=b_range)
 		xs = collect(range(xlims[1], xlims[2], length=150))
 		ys = pdf.(dist, xs)
 		plot!(p, xs, ys, lw=5, c=cdist)
@@ -123,7 +123,7 @@ begin
 
 	function plot_samples_v_pdf(samples, dist; xlims=(-4, 4), ylims=(0, 0.6), cbins=theblue, cdist=:lime, nbins=35)
 		b_range = range(xlims[1], xlims[2], length=nbins)
-		p = histogram(samples, normalize=:pdf, legend=false, xlims=xlims, ylims=ylims, c=cbins, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="x", ylabel="p(x)", bins=b_range)
+		p = histogram(samples, normalize=:pdf, legend=false, xlims=xlims, ylims=ylims, c=cbins, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="\$x\$", ylabel="\$p(x)\$", bins=b_range)
 		xs = collect(range(xlims[1], xlims[2], length=150))
 		ys = dist.(xs)
 		plot!(p, xs, ys, lw=5, c=cdist)
@@ -132,7 +132,7 @@ begin
 
 	function plot_samples(samples; xlims=(-4, 4), ylims=(0, 0.6), cbins=theblue, nbins=35)
 		b_range = range(xlims[1], xlims[2], length=nbins)
-		p = histogram(samples, normalize=:pdf, legend=false, xlims=xlims, ylims=ylims, c=cbins, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="x", ylabel="p(x)", bins=b_range)
+		p = histogram(samples, normalize=:pdf, legend=false, xlims=xlims, ylims=ylims, c=cbins, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="\$x\$", ylabel="\$p(x)\$", bins=b_range)
 		return p
 	end
 
@@ -184,9 +184,9 @@ end
 
 # ╔═╡ 934a618e-c62e-45fb-814e-8840202e2997
 md"""
-μ: $(@bind μ Slider(-4:0.1:4, show_value=true, default=0))
+ $\mu$: $(@bind μ Slider(-4:0.1:4, show_value=true, default=0))
 
-σ: $(@bind σ Slider(0.5:0.05:1.5, show_value=true, default=1.0))
+ $σ$: $(@bind σ Slider(0.5:0.05:1.5, show_value=true, default=1.0))
 """
 
 # ╔═╡ 4ca27a08-df52-4e2f-86ad-f79c84b93ccf
