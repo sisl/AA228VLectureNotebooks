@@ -177,27 +177,6 @@ md"""
  $\alpha$: $(@bind α Slider(0:0.025:1, show_value=true, default=0.7))
 """
 
-# ╔═╡ 94faddc1-5e2d-4fd8-ad8f-9746e90b5dc3
-begin
-	dist = Beta(8, 2)
-	xs = collect(range(0, 2000, length=201))
-	ys = pdf.(dist, xs ./ 2000)
-
-	function estimate_cvar(dist, α)
-		var = quantile(dist, α)
-		trunc_dist = Truncated(dist, var, Inf)
-		return var, mean(rand(trunc_dist, 10000))
-	end
-
-	var, cvar = estimate_cvar(dist, α)
-	
-	prisk = plot(xs, ys, color=theblue, lw=3, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlims=(0, 2000), ylims=(0, 4), label=false, xlabel="Loss of Separation (m)")
-	plot!(prisk, x->pdf(dist, x/2000), 2000 * var, 2000, lw=0, fillrange=0, color=0.5*thepurple, label=false)
-	vline!(prisk, [0.8 * 2000], linestyle=:dash, color=theblue, label="Expected Value")
-	vline!(prisk, [var * 2000], color=thepurple, label="VaR")
-	vline!(prisk, [cvar * 2000], linestyle=:dash, color=thepurple, label="CVaR")
-end
-
 # ╔═╡ 438624a9-9f72-4cdd-9c52-81fe3ac5c2cb
 md"""
 Show Estimated Weight: $(@bind show_weight CheckBox())
@@ -220,25 +199,6 @@ md"""
  𝑤₁: $(@bind w1 NumberField(0:0.1:1, default=0))   𝑤₂ $(@bind w2 NumberField(0:0.1:1, default=0))   𝑤₃ $(@bind w3 NumberField(0:0.1:1, default=0))
 """
 
-# ╔═╡ 564035c8-b6fd-47f9-be7c-dac779702652
-begin
-	init = HalfSpace(-[1.0, 1.0], -1.0)
-	qs = [q1, q2, q3, q4, q5]
-	res = [q1res, q2res, q3res, q4res]
-
-	p = plot(init, xlims=(0,1), ylims=(0,1), aspect_ratio=:equal, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", alpha=0.8, color=theblue, xlabel="\$w_1\$", ylabel="\$w_2\$", guidefont="Arial")
-	for (query, res) in zip(qs, res)
-		if res != "no response"
-			hs = get_halfspace(query, res)
-			plot!(p, hs, alpha=0.8, c=theblue)
-		end
-	end
-	if show_weight
-		scatter!(p, [w1], [w2], legend=false, markercolor=:white, markersize=6)
-	end
-	p
-end
-
 # ╔═╡ ebf35f13-e508-4d88-924d-6378739e745b
 prefres = [w1, w2, w3]' * q5[1] > [w1, w2, w3]' * q5[2] ? "a" : "b";
 
@@ -252,6 +212,52 @@ md"""
  $w$: $(@bind w Slider(0:0.5:10, show_value=true, default=0))
 """
 
+# ╔═╡ 06edfbee-5d16-4e83-a4f9-caf5bd901c00
+@bind dark_mode DarkModeIndicator()
+
+# ╔═╡ 430eb6ba-aaa9-4560-989f-d5df1d93b0a1
+fg = dark_mode ? "white" : "black";
+
+# ╔═╡ 94faddc1-5e2d-4fd8-ad8f-9746e90b5dc3
+begin
+	dist = Beta(8, 2)
+	xs = collect(range(0, 2000, length=201))
+	ys = pdf.(dist, xs ./ 2000)
+
+	function estimate_cvar(dist, α)
+		var = quantile(dist, α)
+		trunc_dist = Truncated(dist, var, Inf)
+		return var, mean(rand(trunc_dist, 10000))
+	end
+
+	var, cvar = estimate_cvar(dist, α)
+	
+	prisk = plot(xs, ys, color=theblue, lw=3, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg=fg, xlims=(0, 2000), ylims=(0, 4), label=false, xlabel="Loss of Separation (m)")
+	plot!(prisk, x->pdf(dist, x/2000), 2000 * var, 2000, lw=0, fillrange=0, color=0.5*thepurple, label=false)
+	vline!(prisk, [0.8 * 2000], linestyle=:dash, color=theblue, label="Expected Value")
+	vline!(prisk, [var * 2000], color=thepurple, label="VaR")
+	vline!(prisk, [cvar * 2000], linestyle=:dash, color=thepurple, label="CVaR")
+end
+
+# ╔═╡ 564035c8-b6fd-47f9-be7c-dac779702652
+begin
+	init = HalfSpace(-[1.0, 1.0], -1.0)
+	qs = [q1, q2, q3, q4, q5]
+	res = [q1res, q2res, q3res, q4res]
+
+	p = plot(init, xlims=(0,1), ylims=(0,1), aspect_ratio=:equal, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg=fg, alpha=0.8, color=theblue, xlabel="\$w_1\$", ylabel="\$w_2\$", guidefont="Arial")
+	for (query, res) in zip(qs, res)
+		if res != "no response"
+			hs = get_halfspace(query, res)
+			plot!(p, hs, alpha=0.8, c=theblue)
+		end
+	end
+	if show_weight
+		scatter!(p, [w1], [w2], legend=false, markercolor=:white, markersize=6)
+	end
+	p
+end
+
 # ╔═╡ 10c171c7-d94e-4f04-81fb-05cb218e8c50
 begin
 	times = collect(1:10)
@@ -260,10 +266,10 @@ begin
 	ψ = @formula ◊(xₜ -> xₜ > 0)
 	gradρ = ∇ρ̃(τ, ψ, w=w)[:]
 	
-	p1 = plot(times, τ, legend=false, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="Time (s)", ylabel="s", xlims=(1, 10), ylims=(-5, 4), c=:lightgray, lw=2, markershape=:circle)
+	p1 = plot(times, τ, legend=false, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg=fg, xlabel="Time (s)", ylabel="s", xlims=(1, 10), ylims=(-5, 4), c=:lightgray, lw=2, markershape=:circle)
 	hline!(p1, [ρ̃(τ, ψ, w=w)], c=theblue, linestyle=:dash, lw=1.0)
 	
-	p2 = scatter(times, gradρ, legend=false, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="Time (s)", ylabel="s", xlims=(1, 10), ylims=(-0.2, 1.2), c=theblue, markershape=:circle)
+	p2 = scatter(times, gradρ, legend=false, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg=fg, xlabel="Time (s)", ylabel="s", xlims=(1, 10), ylims=(-0.2, 1.2), c=theblue, markershape=:circle)
 	for (t, v) in zip(times, gradρ)
 		plot!(p2, [t, t], [0, v], c=theblue, lw=1)
 	end
@@ -271,9 +277,6 @@ begin
 
 	plot(p1, p2, layout=(2, 1))
 end
-
-# ╔═╡ 06edfbee-5d16-4e83-a4f9-caf5bd901c00
-@bind dark_mode DarkModeIndicator()
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2195,7 +2198,7 @@ version = "1.4.1+2"
 # ╟─f7456e13-d5e8-4064-a138-e3c77ab1e106
 # ╟─1cfcbf7c-fa09-4755-bc3a-e3666a7fb1cb
 # ╟─4bf458ec-529e-45a5-a258-d799b44f7638
-# ╠═94faddc1-5e2d-4fd8-ad8f-9746e90b5dc3
+# ╟─94faddc1-5e2d-4fd8-ad8f-9746e90b5dc3
 # ╟─5d81cee1-9eb8-4592-9aae-ecb79b8d106f
 # ╟─5b81efe7-0019-4f5b-aadb-980f7e87b4b9
 # ╟─a4848c23-17c3-42f0-87c9-13e9cdeb47bc
@@ -2219,6 +2222,7 @@ version = "1.4.1+2"
 # ╟─c6795b34-8cb8-4df3-92b7-0a1eef071fa9
 # ╟─10c171c7-d94e-4f04-81fb-05cb218e8c50
 # ╟─5e35b008-be58-4b31-9079-d2c5c8ed39af
+# ╟─430eb6ba-aaa9-4560-989f-d5df1d93b0a1
 # ╟─39b9a784-2c8b-46a2-a414-1252638ade67
 # ╟─480491fb-9f19-49ee-8f0f-0bd8c1c352d8
 # ╟─06edfbee-5d16-4e83-a4f9-caf5bd901c00

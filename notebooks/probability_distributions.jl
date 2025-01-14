@@ -60,7 +60,7 @@ title(presentation)
 
 # ╔═╡ 0f3e473e-9b79-4186-969f-1eb8e6f420b3
 md"""
-We can find a Gaussian distribution that fits data set 1 well, but we cannot find a Gaussian distribution does not fit data set 2 well because data set 2 is _multimodal_.
+We can find a Gaussian distribution that fits data set 1 well, but we cannot find a Gaussian distribution that fits data set 2 well because data set 2 is _multimodal_.
 """
 
 # ╔═╡ 2f3a2b6a-ed97-4c9d-b8e4-407aafea0239
@@ -183,13 +183,6 @@ md"""
 The full distribution over probabilities is below:
 """
 
-# ╔═╡ 97d25df2-ee32-4473-a425-0998fa1ebfc6
-begin
-	ns = collect(1:18)
-	prob_ns = [get_prob(n) for n in ns]
-	bar(ns, prob_ns, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", legend=false, c=theblue, ylims=(0, 0.4), xlabel="Number of Wisdom Teeth of Four Book Authors", ylabel="Probability")
-end
-
 # ╔═╡ b4d98a5f-d0ea-43c2-b710-071b1fc3c866
 @section "Parameter Learning Example"
 
@@ -292,57 +285,12 @@ md"""
 show likelihood: $(@bind show_like CheckBox())
 """
 
-# ╔═╡ 98ee4ce4-44cc-47d3-b5f0-7b483865a630
-begin
-	function plot_samples_v_dist(samples, dist; xlims=(-4, 4), ylims=(0, 0.6), cbins=theblue, cdist=:magenta, nbins=35, show_likelihood=show_like)
-		b_range = range(xlims[1], xlims[2], length=nbins)
-		p = histogram(samples, normalize=:pdf, legend=false, xlims=xlims, ylims=ylims, c=cbins, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="\$x\$", ylabel="\$p(x)\$", bins=b_range)
-		xs = collect(range(xlims[1], xlims[2], length=150))
-		ys = pdf.(dist, xs)
-		plot!(p, xs, ys, lw=5, c=cdist)
-		if show_like
-			ll = sum(logpdf(dist, sample) for sample in samples)
-			title!(p, "\$\\log p(D \\mid \\theta) = \$ $(round(ll, digits =2))")
-		end
-		return p
-	end
-
-	function plot_samples_v_pdf(samples, dist; xlims=(-4, 4), ylims=(0, 0.6), cbins=theblue, cdist=:magenta, nbins=35)
-		b_range = range(xlims[1], xlims[2], length=nbins)
-		p = histogram(samples, normalize=:pdf, legend=false, xlims=xlims, ylims=ylims, c=cbins, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="\$x\$", ylabel="\$p(x)\$", bins=b_range)
-		xs = collect(range(xlims[1], xlims[2], length=150))
-		ys = dist.(xs)
-		plot!(p, xs, ys, lw=5, c=cdist)
-		return p
-	end
-
-	function plot_samples(samples; xlims=(-4, 4), ylims=(0, 0.6), cbins=theblue, nbins=35)
-		b_range = range(xlims[1], xlims[2], length=nbins)
-		p = histogram(samples, normalize=:pdf, legend=false, xlims=xlims, ylims=ylims, c=cbins, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="\$x\$", ylabel="\$p(x)\$", bins=b_range)
-		return p
-	end
-
-	md"> _Plotting Code_"
-end
-
-# ╔═╡ 4b02fcb8-3db8-4e05-8a7c-c1dabad8a487
-plot_samples_v_dist(zs, Normal())
-
 # ╔═╡ 934a618e-c62e-45fb-814e-8840202e2997
 md"""
  $\mu$: $(@bind μ Slider(-4:0.1:4, show_value=true, default=0))
 
  $σ$: $(@bind σ Slider(0.5:0.05:1.5, show_value=true, default=1.0))
 """
-
-# ╔═╡ 4ca27a08-df52-4e2f-86ad-f79c84b93ccf
-begin
-	if dset == "data set 1"
-		plot_samples_v_dist(samples, Normal(μ, σ))
-	else
-		plot_samples_v_dist(samples_mixture, Normal(μ, σ))
-	end
-end
 
 # ╔═╡ afe2c330-f1d4-4893-8709-f629ed797eb0
 md"""
@@ -357,15 +305,6 @@ md"""
 
  w1 $(@bind w Slider(0.0:0.05:1.0, default=0.5)) w2
 """
-
-# ╔═╡ 70a51ee9-eb4e-487d-addd-fb03e588ff8e
-begin
-	if dset == "data set 1"
-		plot_samples_v_dist(samples, MixtureModel([Normal(μ1, σ1), Normal(μ2, σ2)], [1-w, w]))
-	else
-		plot_samples_v_dist(samples_mixture, MixtureModel([Normal(μ1, σ1), Normal(μ2, σ2)], [1-w, w]))
-	end
-end
 
 # ╔═╡ 74dfa650-15d7-4f7d-ad27-11d75b9f5b0b
 centered(LocalResource(joinpath(@__DIR__, "..", "media", "normalizing_flows.gif")))
@@ -387,26 +326,6 @@ Markdown.parse("""
 \$\\Sigma = \\begin{bmatrix} $(Σx) & $(Σxy) \\\\ $(Σxy) & $(Σy) \\end{bmatrix}\$
 """)
 
-# ╔═╡ 22a94e1b-8137-4388-8743-817017778f6a
-begin
-	Σ = [Σx Σxy; Σxy Σy]
-	dist = MvNormal(zeros(2), Σ)
-	f(x, y) = pdf(dist, [x, y])
-	x = collect(range(-3, 3, length=200))
-	y = collect(range(-3, 3, length=200))
-	z = @. f(x', y)
-	contour(x, y, z, cbar=false, grid=false, bg="transparent", background_color_inside=:black, fg="white", aspect_ratio=:equal, xlims=(-3, 3), ylims=(-3, 3), color=cgrad([:black, theblue]), lw=3, ticks=:none, xlabel="\$x\$", ylabel="\$y\$")
-end
-
-# ╔═╡ d054898c-04c7-4bb7-8b5c-d25130072dd4
-xs = f.(zs);
-
-# ╔═╡ 5316d2cf-ef2a-471e-a7ec-30d7c9889196
-plot_samples(xs, cbins=thepurple, ylims=(0.0, 1.0))
-
-# ╔═╡ 63be3472-3b52-4440-a43b-ddaab866dbee
-plot_samples_v_pdf(xs, pₓ, cbins=thepurple, cdist=:magenta, ylims=(0.0, 1.0))
-
 # ╔═╡ e6f9a59e-79f6-4a5e-ae2b-947d6eb93f8f
 md"""
  $\theta_1$: $(@bind θ₁ Slider(-2.0:0.1:2.0, show_value=true, default=0.0))
@@ -415,18 +334,6 @@ md"""
 
  $\theta_3$: $(@bind θ₃ Slider(0.01:0.01:0.2, show_value=true, default=0.1))
 """
-
-# ╔═╡ aad58f2a-0e03-459d-af47-5f059489f9e3
-begin
-	f2(x, y) = pdf(Normal(θ₁ * x + θ₂, θ₃), y)
-	xsmap = collect(range(-0.2, 0.2, length=201))
-	ysmap = collect(range(-0.2, 0.2, length=201))
-	zsmap = @. f2(xsmap', ysmap)
-	p = heatmap(xsmap, ysmap, zsmap, cbar=false, grid=false, bg="transparent", background_color_inside=:black, fg="white", aspect_ratio=:equal, xlims=(-0.2, 0.2), ylims=(-0.2, 0.2), color=cgrad([:black, theblue]), alpha=0.75)
-	llike = sum(logpdf(Normal(θ₁ * x + θ₂, θ₃), y) for (x, y) in zip(s, o))
-	title!(p, "Log likelihood: $(round(llike, digits=2))")
-	scatter!(p, s, o, c=:pink, bg="transparent", background_color_inside="#1A1A1A", fg="white", legend=false, aspect_ratio=:equal, xlims=(-0.2,0.2), ylims=(-0.2,0.2), xlabel="\$s\$", ylabel="\$o\$", markerstrokecolor=:pink, markersize=2, markeralpha=0.5)
-end
 
 # ╔═╡ 34208203-81b3-430e-8dfd-2fb6e5f81746
 begin
@@ -443,16 +350,6 @@ begin
 	Markdown.parse("""
 	\$p(y \\mid x) = \\mathcal N ($(round(θ[1], digits=3))x + $(abs(round(θ[2], digits=3))), $(round(θ[3], digits=2))^2)\$
 	""")
-end
-
-# ╔═╡ b7c1bbe1-cb15-423e-8d3c-eae2ba42947e
-begin
-	f3(x, y) = pdf(Normal(θ[1] * x + θ[2], θ[3]), y)
-	zsmap3 = @. f3(xsmap', ysmap)
-	p3 = heatmap(xsmap, ysmap, zsmap3, cbar=false, grid=false, bg="transparent", background_color_inside=:black, fg="white", aspect_ratio=:equal, xlims=(-0.2, 0.2), ylims=(-0.2, 0.2), color=cgrad([:black, theblue]), alpha=0.75)
-	llike3 = sum(logpdf(Normal(θ[1] * x + θ[2], θ[3]), y) for (x, y) in zip(s, o))
-	title!(p3, "Log likelihood: $(round(llike3, digits=2))")
-	scatter!(p3, s, o, c=:pink, bg="transparent", background_color_inside="#1A1A1A", fg="white", legend=false, aspect_ratio=:equal, xlims=(-0.2,0.2), ylims=(-0.2,0.2), xlabel="\$s\$", ylabel="\$o\$", markerstrokecolor=:pink, markersize=2, markeralpha=0.5)
 end
 
 # ╔═╡ 98038b85-e990-47f3-99fc-7c7397e07df4
@@ -495,19 +392,6 @@ begin
 	θdist = fit_bayesian(alg_bayesian, zip(first.(data)[inds], last.(data)[inds]))
 end;
 
-# ╔═╡ 87443c26-f162-41dc-a99a-a33a22d30f6b
-begin
-	function plot_data(data, var; xlims)
-		p = histogram(data, normalize=:pdf, legend=false, c=theblue, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="\$$var\$", ylabel="\$p($var)\$", size=(400, 400), title="Expected Value: $(round(mean(data), digits=2))", xlims=xlims)
-		return p
-	end
-	
-	pa = plot_data(θdist[Symbol("θ[1]")].data[:], "\\theta_1", xlims=(0,2))
-	pb = plot_data(θdist[Symbol("θ[2]")].data[:], "\\theta_2", xlims=(-0.1,0.1))
-	pc = plot_data(exp.(θdist[Symbol("θ[3]")].data[:]), "\\theta_3", xlims=(0,0.1))
-	plot(pa, pb, pc, layout=(1, 3), size=(1200, 400))
-end
-
 # ╔═╡ 1adefa8e-faeb-4783-88d3-45be4ffa5a4b
 md"""
 Number same: $(@bind nsame NumberField(0:1:50, default=0))
@@ -527,12 +411,102 @@ md"""
 Show probability same is greater than 0.5: $(@bind show_same CheckBox())
 """
 
+# ╔═╡ 06edfbee-5d16-4e83-a4f9-caf5bd901c00
+@bind dark_mode DarkModeIndicator()
+
+# ╔═╡ 22a94e1b-8137-4388-8743-817017778f6a
+begin
+	Σ = [Σx Σxy; Σxy Σy]
+	dist = MvNormal(zeros(2), Σ)
+	f(x, y) = pdf(dist, [x, y])
+	x = collect(range(-3, 3, length=200))
+	y = collect(range(-3, 3, length=200))
+	z = @. f(x', y)
+	if dark_mode
+		c = contour(x, y, z, cbar=false, grid=false, bg="transparent", background_color_inside=:black, fg="white", aspect_ratio=:equal, xlims=(-3, 3), ylims=(-3, 3), color=cgrad([:black, theblue]), lw=3, ticks=:none, xlabel="\$x\$", ylabel="\$y\$", guidefont="Arial")
+	else
+		c = contour(x, y, z, cbar=false, grid=false, bg="transparent", background_color_inside=:black, aspect_ratio=:equal, xlims=(-3, 3), ylims=(-3, 3), color=cgrad([:black, theblue]), lw=3, ticks=:none, xlabel="\$x\$", ylabel="\$y\$", guidefont="Arial")
+	end
+	c
+end
+
+# ╔═╡ d054898c-04c7-4bb7-8b5c-d25130072dd4
+xs = f.(zs);
+
+# ╔═╡ 97d25df2-ee32-4473-a425-0998fa1ebfc6
+begin
+	ns = collect(1:18)
+	prob_ns = [get_prob(n) for n in ns]
+	if dark_mode
+		b = bar(ns, prob_ns, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", legend=false, c=theblue, ylims=(0, 0.4), xlabel="Number of Wisdom Teeth of Four Book Authors", ylabel="Probability")
+	else
+		b = bar(ns, prob_ns, grid=false, bg="transparent", background_color_inside="#1A1A1A", legend=false, c=theblue, ylims=(0, 0.4), xlabel="Number of Wisdom Teeth of Four Book Authors", ylabel="Probability")
+	end
+	b
+end
+
+# ╔═╡ aad58f2a-0e03-459d-af47-5f059489f9e3
+begin
+	f2(x, y) = pdf(Normal(θ₁ * x + θ₂, θ₃), y)
+	xsmap = collect(range(-0.2, 0.2, length=201))
+	ysmap = collect(range(-0.2, 0.2, length=201))
+	zsmap = @. f2(xsmap', ysmap)
+	if dark_mode
+		p = heatmap(xsmap, ysmap, zsmap, cbar=false, grid=false, bg="transparent", background_color_inside=:black, fg="white", aspect_ratio=:equal, xlims=(-0.2, 0.2), ylims=(-0.2, 0.2), color=cgrad([:black, theblue]), alpha=0.75)
+		llike = sum(logpdf(Normal(θ₁ * x + θ₂, θ₃), y) for (x, y) in zip(s, o))
+		title!(p, "Log likelihood: $(round(llike, digits=2))")
+		scatter!(p, s, o, c=:pink, bg="transparent", background_color_inside="#1A1A1A", fg="white", legend=false, aspect_ratio=:equal, xlims=(-0.2,0.2), ylims=(-0.2,0.2), xlabel="\$s\$", ylabel="\$o\$", markerstrokecolor=:pink, markersize=2, markeralpha=0.5, guidefont="Arial")
+	else
+		p = heatmap(xsmap, ysmap, zsmap, cbar=false, grid=false, bg="transparent", background_color_inside=:black, aspect_ratio=:equal, xlims=(-0.2, 0.2), ylims=(-0.2, 0.2), color=cgrad([:black, theblue]), alpha=0.75)
+		llike = sum(logpdf(Normal(θ₁ * x + θ₂, θ₃), y) for (x, y) in zip(s, o))
+		title!(p, "Log likelihood: $(round(llike, digits=2))")
+		scatter!(p, s, o, c=:pink, bg="transparent", background_color_inside="#1A1A1A", legend=false, aspect_ratio=:equal, xlims=(-0.2,0.2), ylims=(-0.2,0.2), xlabel="\$s\$", ylabel="\$o\$", markerstrokecolor=:pink, markersize=2, markeralpha=0.5, guidefont="Arial")
+	end
+	p
+end
+
+# ╔═╡ b7c1bbe1-cb15-423e-8d3c-eae2ba42947e
+begin
+	f3(x, y) = pdf(Normal(θ[1] * x + θ[2], θ[3]), y)
+	zsmap3 = @. f3(xsmap', ysmap)
+	if dark_mode
+		p3 = heatmap(xsmap, ysmap, zsmap3, cbar=false, grid=false, bg="transparent", background_color_inside=:black, fg="white", aspect_ratio=:equal, xlims=(-0.2, 0.2), ylims=(-0.2, 0.2), color=cgrad([:black, theblue]), alpha=0.75)
+		llike3 = sum(logpdf(Normal(θ[1] * x + θ[2], θ[3]), y) for (x, y) in zip(s, o))
+		title!(p3, "Log likelihood: $(round(llike3, digits=2))")
+		scatter!(p3, s, o, c=:pink, bg="transparent", background_color_inside="#1A1A1A", fg="white", legend=false, aspect_ratio=:equal, xlims=(-0.2,0.2), ylims=(-0.2,0.2), xlabel="\$s\$", ylabel="\$o\$", markerstrokecolor=:pink, markersize=2, markeralpha=0.5, guidefont="Arial")
+	else
+		p3 = heatmap(xsmap, ysmap, zsmap3, cbar=false, grid=false, bg="transparent", background_color_inside=:black, aspect_ratio=:equal, xlims=(-0.2, 0.2), ylims=(-0.2, 0.2), color=cgrad([:black, theblue]), alpha=0.75)
+		llike3 = sum(logpdf(Normal(θ[1] * x + θ[2], θ[3]), y) for (x, y) in zip(s, o))
+		title!(p3, "Log likelihood: $(round(llike3, digits=2))")
+		scatter!(p3, s, o, c=:pink, bg="transparent", background_color_inside="#1A1A1A", legend=false, aspect_ratio=:equal, xlims=(-0.2,0.2), ylims=(-0.2,0.2), xlabel="\$s\$", ylabel="\$o\$", markerstrokecolor=:pink, markersize=2, markeralpha=0.5, guidefont="Arial")
+	end
+	p3
+end
+
+# ╔═╡ 87443c26-f162-41dc-a99a-a33a22d30f6b
+begin
+	function plot_data(data, var; xlims, dm=dark_mode)
+		if dm
+			p = histogram(data, normalize=:pdf, legend=false, c=theblue, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="\$$var\$", ylabel="\$p($var)\$", size=(700, 300), title="Expected Value: $(round(mean(data), digits=2))", xlims=xlims, guidefont="Arial")
+		else
+			p = histogram(data, normalize=:pdf, legend=false, c=theblue, grid=false, bg="transparent", background_color_inside="#1A1A1A", xlabel="\$$var\$", ylabel="\$p($var)\$", size=(350, 200), title="Expected Value: $(round(mean(data), digits=2))", xlims=xlims, guidefont="Arial")
+		end
+		return p
+	end
+	
+	pa = plot_data(θdist[Symbol("θ[1]")].data[:], "\\theta_1", xlims=(0,2))
+	pb = plot_data(θdist[Symbol("θ[2]")].data[:], "\\theta_2", xlims=(-0.1,0.1))
+	pc = plot_data(exp.(θdist[Symbol("θ[3]")].data[:]), "\\theta_3", xlims=(0,0.1))
+	plot(pa, pb, pc, layout=(1, 3)) #, size=(1100, 400))
+end
+
 # ╔═╡ 24cf8fad-2496-46ac-8ecb-1dd51b5cc561
 begin
+	fg = dark_mode ? "white" : "black"
 	xspost = collect(range(0, 1, length=201))
 	yspost = pdf.(posterior, xspost)
 	plo = plot(xspost, yspost, xlims=(0,1), ylims=(0,maximum(yspost)+0.1), legend=false,
-	lw=2, c=theblue, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="\$\\theta\$", ylabel="\$P(\\theta \\mid D)\$", size=(300, 300), title="Beta($(Int(posterior.α)), $(Int(posterior.β)))", guidefont="Arial")
+	lw=2, c=theblue, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg=fg, xlabel="\$\\theta\$", ylabel="\$P(\\theta \\mid D)\$", size=(300, 300), title="Beta($(Int(posterior.α)), $(Int(posterior.β)))", guidefont="Arial")
 	if show_same
 		xs50 = collect(range(0.5, 1, length=201))
 		ys50 = pdf.(posterior, xs50)
@@ -541,8 +515,77 @@ begin
 	plo
 end
 
-# ╔═╡ 06edfbee-5d16-4e83-a4f9-caf5bd901c00
-@bind dark_mode DarkModeIndicator()
+# ╔═╡ 98ee4ce4-44cc-47d3-b5f0-7b483865a630
+begin
+	function plot_samples_v_dist(samples, dist; xlims=(-4, 4), ylims=(0, 0.6), cbins=theblue, cdist=:magenta, nbins=35, show_likelihood=show_like, dm=dark_mode)
+		b_range = range(xlims[1], xlims[2], length=nbins)
+		if dm
+			p = histogram(samples, normalize=:pdf, legend=false, xlims=xlims, ylims=ylims, c=cbins, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="\$x\$", ylabel="\$p(x)\$", bins=b_range, guidefont="Arial")
+		else
+			p = histogram(samples, normalize=:pdf, legend=false, xlims=xlims, ylims=ylims, c=cbins, grid=false, bg="transparent", background_color_inside="#1A1A1A", xlabel="\$x\$", ylabel="\$p(x)\$", bins=b_range, guidefont="Arial")
+		end
+		xs = collect(range(xlims[1], xlims[2], length=150))
+		ys = pdf.(dist, xs)
+		plot!(p, xs, ys, lw=5, c=cdist)
+		if show_like
+			ll = sum(logpdf(dist, sample) for sample in samples)
+			title!(p, "\$\\log p(D \\mid \\theta) = \$ $(round(ll, digits =2))")
+		end
+		return p
+	end
+
+	function plot_samples_v_pdf(samples, dist; xlims=(-4, 4), ylims=(0, 0.6), cbins=theblue, cdist=:magenta, nbins=35, dm=dark_mode)
+		b_range = range(xlims[1], xlims[2], length=nbins)
+		if dm
+			p = histogram(samples, normalize=:pdf, legend=false, xlims=xlims, ylims=ylims, c=cbins, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="\$x\$", ylabel="\$p(x)\$", bins=b_range, guidefont="Arial")
+		else
+			p = histogram(samples, normalize=:pdf, legend=false, xlims=xlims, ylims=ylims, c=cbins, grid=false, bg="transparent", background_color_inside="#1A1A1A", xlabel="\$x\$", ylabel="\$p(x)\$", bins=b_range, guidefont="Arial")
+		end
+		xs = collect(range(xlims[1], xlims[2], length=150))
+		ys = dist.(xs)
+		plot!(p, xs, ys, lw=5, c=cdist)
+		return p
+	end
+
+	function plot_samples(samples; xlims=(-4, 4), ylims=(0, 0.6), cbins=theblue, nbins=35, dm=dark_mode)
+		b_range = range(xlims[1], xlims[2], length=nbins)
+		if dm
+			p = histogram(samples, normalize=:pdf, legend=false, xlims=xlims, ylims=ylims, c=cbins, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="\$x\$", ylabel="\$p(x)\$", bins=b_range, guidefont="Arial")
+		else
+			p = histogram(samples, normalize=:pdf, legend=false, xlims=xlims, ylims=ylims, c=cbins, grid=false, bg="transparent", background_color_inside="#1A1A1A", xlabel="\$x\$", ylabel="\$p(x)\$", bins=b_range, guidefont="Arial")
+		end
+		return p
+	end
+
+	md"> _Plotting Code_"
+end
+
+# ╔═╡ 4ca27a08-df52-4e2f-86ad-f79c84b93ccf
+begin
+	if dset == "data set 1"
+		plot_samples_v_dist(samples, Normal(μ, σ))
+	else
+		plot_samples_v_dist(samples_mixture, Normal(μ, σ))
+	end
+end
+
+# ╔═╡ 70a51ee9-eb4e-487d-addd-fb03e588ff8e
+begin
+	if dset == "data set 1"
+		plot_samples_v_dist(samples, MixtureModel([Normal(μ1, σ1), Normal(μ2, σ2)], [1-w, w]))
+	else
+		plot_samples_v_dist(samples_mixture, MixtureModel([Normal(μ1, σ1), Normal(μ2, σ2)], [1-w, w]))
+	end
+end
+
+# ╔═╡ 4b02fcb8-3db8-4e05-8a7c-c1dabad8a487
+plot_samples_v_dist(zs, Normal())
+
+# ╔═╡ 5316d2cf-ef2a-471e-a7ec-30d7c9889196
+plot_samples(xs, cbins=thepurple, ylims=(0.0, 1.0))
+
+# ╔═╡ 63be3472-3b52-4440-a43b-ddaab866dbee
+plot_samples_v_pdf(xs, pₓ, cbins=thepurple, cdist=:magenta, ylims=(0.0, 1.0))
 
 # ╔═╡ 6ef48df6-aba6-4c7e-887a-4d6d60349627
 toc()
@@ -3383,7 +3426,7 @@ version = "1.4.1+2"
 # ╟─091d8e8e-1ceb-4f7e-867e-96ccd6a23d41
 # ╟─28b11a32-f2dd-45af-8cbc-78f5b689c16a
 # ╟─3319cfe2-7411-4adc-b9a6-c73e3464fe96
-# ╠═22a94e1b-8137-4388-8743-817017778f6a
+# ╟─22a94e1b-8137-4388-8743-817017778f6a
 # ╟─bdbf60e0-439b-4b04-96a2-296c9110a8c8
 # ╟─f29e71ad-87ac-452a-855a-d4162b81d9e0
 # ╟─0b74fda9-ed43-456c-b5cb-dd198718455a
@@ -3409,8 +3452,8 @@ version = "1.4.1+2"
 # ╠═64911e61-b8de-4965-9991-96e2e46fb0ff
 # ╟─1adefa8e-faeb-4783-88d3-45be4ffa5a4b
 # ╠═8acdb942-28ec-4f28-ad31-1fc98ce09283
-# ╟─823208aa-b406-463f-88ae-50573962d30f
 # ╟─24cf8fad-2496-46ac-8ecb-1dd51b5cc561
+# ╟─823208aa-b406-463f-88ae-50573962d30f
 # ╟─c57deb31-6b4a-4a02-a4a8-a8463f21ca9c
 # ╠═9a04b253-0bbe-4aaf-8312-991b75af77d2
 # ╟─fa23f953-4449-4896-9385-36d4598bddc0
