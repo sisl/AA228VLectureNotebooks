@@ -8,3 +8,27 @@ Notebooks to accompany lectures for Stanford's AA228V/CS238V _Validation of Safe
 <p align="center"> <img src="./media/coverart.svg"> </p>
 
 Uses the [`StanfordAA228V.jl`](https://github.com/sisl/StanfordAA228V.jl) Julia package.
+
+## Installation
+- _Install [**Pluto**](https://plutojl.org/) and the SISL Julia package registry:_
+    1. Open `julia` in a terminal.
+    1. Run:
+        ```julia
+        using Pkg
+        Pkg.add("Pluto")
+        Registry.add(url="https://github.com/sisl/Registry.git")
+        ```
+## Running
+- Open Pluto:
+    - Run `julia` in a terminal.
+    - Within Julia, run:
+        ```julia
+        using Pluto
+        Pluto.run()
+        ```
+        - This should open Pluto in your browser.
+            - If not, checkout the Pluto output for the URL (likely http://localhost:1234/):
+            ```julia
+            ┌ Info:
+            └ Opening http://localhost:1234/ in your default browser... ~ have fun!
+            ```
