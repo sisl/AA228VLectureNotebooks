@@ -210,6 +210,11 @@ Suppose we have the following dataset of states and corresponding observations (
 # ╔═╡ 64911e61-b8de-4965-9991-96e2e46fb0ff
 prior = Beta(1, 1);
 
+# ╔═╡ c57deb31-6b4a-4a02-a4a8-a8463f21ca9c
+md"""
+Probability that same is more likely:
+"""
+
 # ╔═╡ fa23f953-4449-4896-9385-36d4598bddc0
 begin
 	Random.seed!(4)
@@ -514,12 +519,26 @@ Posterior distribution:
 # ╔═╡ 8acdb942-28ec-4f28-ad31-1fc98ce09283
 posterior = Beta(prior.α + nsame, prior.β + ndiff);
 
+# ╔═╡ 9a04b253-0bbe-4aaf-8312-991b75af77d2
+1 - cdf(posterior, 0.5)
+
+# ╔═╡ 823208aa-b406-463f-88ae-50573962d30f
+md"""
+Show probability same is greater than 0.5: $(@bind show_same CheckBox())
+"""
+
 # ╔═╡ 24cf8fad-2496-46ac-8ecb-1dd51b5cc561
 begin
 	xspost = collect(range(0, 1, length=201))
 	yspost = pdf.(posterior, xspost)
-	plot(xspost, yspost, xlims=(0,1), ylims=(0,maximum(yspost)+0.1), legend=false,
-	lw=2, c=theblue, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="\$\\theta\$", ylabel="\$P(\\theta \\mid D\$", size=(300, 300), title="Beta($(Int(posterior.α)), $(Int(posterior.β)))")
+	plo = plot(xspost, yspost, xlims=(0,1), ylims=(0,maximum(yspost)+0.1), legend=false,
+	lw=2, c=theblue, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="\$\\theta\$", ylabel="\$P(\\theta \\mid D)\$", size=(300, 300), title="Beta($(Int(posterior.α)), $(Int(posterior.β)))", guidefont="Arial")
+	if show_same
+		xs50 = collect(range(0.5, 1, length=201))
+		ys50 = pdf.(posterior, xs50)
+		plot!(plo, xs50, ys50, lw=0, fillrange=0, color=0.5*theblue, label=false)
+	end
+	plo
 end
 
 # ╔═╡ 06edfbee-5d16-4e83-a4f9-caf5bd901c00
@@ -3364,7 +3383,7 @@ version = "1.4.1+2"
 # ╟─091d8e8e-1ceb-4f7e-867e-96ccd6a23d41
 # ╟─28b11a32-f2dd-45af-8cbc-78f5b689c16a
 # ╟─3319cfe2-7411-4adc-b9a6-c73e3464fe96
-# ╟─22a94e1b-8137-4388-8743-817017778f6a
+# ╠═22a94e1b-8137-4388-8743-817017778f6a
 # ╟─bdbf60e0-439b-4b04-96a2-296c9110a8c8
 # ╟─f29e71ad-87ac-452a-855a-d4162b81d9e0
 # ╟─0b74fda9-ed43-456c-b5cb-dd198718455a
@@ -3390,7 +3409,10 @@ version = "1.4.1+2"
 # ╠═64911e61-b8de-4965-9991-96e2e46fb0ff
 # ╟─1adefa8e-faeb-4783-88d3-45be4ffa5a4b
 # ╠═8acdb942-28ec-4f28-ad31-1fc98ce09283
+# ╟─823208aa-b406-463f-88ae-50573962d30f
 # ╟─24cf8fad-2496-46ac-8ecb-1dd51b5cc561
+# ╟─c57deb31-6b4a-4a02-a4a8-a8463f21ca9c
+# ╠═9a04b253-0bbe-4aaf-8312-991b75af77d2
 # ╟─fa23f953-4449-4896-9385-36d4598bddc0
 # ╟─98ee4ce4-44cc-47d3-b5f0-7b483865a630
 # ╟─39b9a784-2c8b-46a2-a414-1252638ade67

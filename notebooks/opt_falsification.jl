@@ -24,21 +24,19 @@ begin
 	using LinearAlgebra
 	using Plots
 	using Random
-	using LazySets
 	using PlutoPapers
-	using SignalTemporalLogic
 
 	default(fontfamily="Computer Modern", framestyle=:box) # LaTeX-style plotting
 	theblue = RGB(128 / 255, 185 / 255, 255 / 255)
 	thepurple = RGB(195 / 255, 184 / 255, 255 / 255)
 	nothing
-end
+end;
 
-# ╔═╡ 9f76c16b-6564-4614-b362-1b4a4804c89e
+# ╔═╡ 2f308228-2806-4bdf-b7df-e000c6eb277a
 begin
 	presentation = PlutoPaper(
 		documentclass=Tufte(),
-		title="Algorithms for Validation: Property Specification",
+		title="Algorithms for Validation: Falsification Through Optimization",
 		authors=[
 			# Author(name="Lecture Introduction")
 			# Author(name="Mykel Kochenderfer")
@@ -51,97 +49,33 @@ begin
 	applyclass(presentation.documentclass)
 end
 
-# ╔═╡ f7456e13-d5e8-4064-a138-e3c77ab1e106
+# ╔═╡ 19fb47bd-f479-4842-ad51-6f1af88c72f8
 title(presentation)
 
-# ╔═╡ 1cfcbf7c-fa09-4755-bc3a-e3666a7fb1cb
-@section "Risk Metrics"
+# ╔═╡ 763e2587-81de-43b0-970b-511f7bdb48ba
+@section "Direct Falsification"
 
-# ╔═╡ 5d81cee1-9eb8-4592-9aae-ecb79b8d106f
-@section "Preference Elicitation"
-
-# ╔═╡ 5b81efe7-0019-4f5b-aadb-980f7e87b4b9
-md"""
- $w_1$ is for M&Ms
-
- $w_2$ is for Sour Patch Kids
-
- $w_3$ is for Skittles
-"""
-
-# ╔═╡ a4848c23-17c3-42f0-87c9-13e9cdeb47bc
-function get_halfspace(query, pref)
-	if pref == "a"
-		b = query[2]
-		a = query[1]
-	else
-		b = query[1]
-		a = query[2]
-	end
-	return HalfSpace([a[1]-a[3]-b[1]+b[3], a[2]-a[3]-b[2]+b[3]], b[3]-a[3])
-end;
-
-# ╔═╡ 748f98c8-ed69-4021-925e-a59641b3115e
-md"""
-In this case, we preselected the queries. You can imagine that we would probably do better if we selected the queries as we went to maximize the amount of information they provide us! This is the topic of lots of research on preference-based learning. (beyond the scope of this class)
-"""
-
-# ╔═╡ e45364dd-ecaf-4b49-b98e-13f6670be244
-md"""
-We also assumed that the expert was perfectly rational. It is common to relax this assumption and instead compute a distribution over the weights. (beyond the scope of this class)
-"""
-
-# ╔═╡ 93d48c9f-ec35-4f7b-9fcb-ab1d7f4c67d8
-@section "Smooth Robustness"
-
-# ╔═╡ 5e35b008-be58-4b31-9079-d2c5c8ed39af
-begin
-	q1 = [[1., 3., 6.],
-		  [7., 1., 2.]]
-	q2 = [[6., 1., 3.],
-		  [5., 2., 3.]]
-	q3 = [[2., 7., 1.],
-		  [6., 2., 2.]]
-	q4 = [[4., 3., 4.],
-	      [4., 4., 3.]]
-	q5 = [[1., 4., 5.],
-		  [5., 3., 2.]]
-end;
-
-# ╔═╡ 3afb60e5-e8a1-4318-95aa-2d575d2749d6
+# ╔═╡ cfb8f053-2a54-459a-8f10-f84f789257c8
 Markdown.parse("""
-Query 1: \$a = $(q1[1])\$
-		
- \$\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ b=$(q1[2])\$
+```julia
+struct DirectFalsification
+	d # depth
+	m # number of samples
+end
+
+function falsify(alg::DirectFalsification, sys, ψ)
+	d, m = alg.d, alg.m
+	τs = [rollout(sys, d=d) for i in 1:m]
+	return filter(τ->isfailure(ψ, τ), τs)
+end
+```
 """)
 
-# ╔═╡ 2ffdc718-0dcf-4d0d-b29f-5d9c13baf184
-Markdown.parse("""
-Query 2: \$a = $(q2[1])\$
-		
- \$\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ b=$(q2[2])\$
-""")
+# ╔═╡ 5eba1fee-bbc2-4019-a062-9b1d76dfa473
+@section("Nominal Trajectory Distribution")
 
-# ╔═╡ edc03e51-8c15-4a2c-95e5-d96bc92a3063
-Markdown.parse("""
-Query 3: \$a = $(q3[1])\$
-		
- \$\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ b=$(q3[2])\$
-""")
-
-# ╔═╡ 95463860-4c32-4850-8837-c505ed08ac6b
-Markdown.parse("""
-Query 4: \$a = $(q4[1])\$
-		
- \$\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ b=$(q4[2])\$
-""")
-
-# ╔═╡ 4f9476b9-cd6d-47b9-9a66-30f01bff2723
-Markdown.parse("""
-Query 5: \$a = $(q5[1])\$
-		
- \$\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ \\ b=$(q5[2])\$
-""")
+# ╔═╡ 8ed40ee7-1d65-4ba3-a7f6-2e475fb3b0ef
+@section("Fuzzing")
 
 # ╔═╡ 39b9a784-2c8b-46a2-a414-1252638ade67
 begin
@@ -172,129 +106,269 @@ begin
 	md"> _Backend_"
 end
 
-# ╔═╡ 4bf458ec-529e-45a5-a258-d799b44f7638
+# ╔═╡ 934a618e-c62e-45fb-814e-8840202e2997
 md"""
- $\alpha$: $(@bind α Slider(0:0.025:1, show_value=true, default=0.7))
+Perception noise: $(@bind σ Slider(0.01:0.01:0.3, show_value=true, default=0.1))
+
+Depth ($d$): $(@bind d Slider(41:5:81, show_value=true, default=41))
+
+Number of rollouts ($m$): $(@bind m Slider(1:1:150, show_value=true, default=50))
 """
 
-# ╔═╡ 94faddc1-5e2d-4fd8-ad8f-9746e90b5dc3
-begin
-	dist = Beta(8, 2)
-	xs = collect(range(0, 2000, length=201))
-	ys = pdf.(dist, xs ./ 2000)
-
-	function estimate_cvar(dist, α)
-		var = quantile(dist, α)
-		trunc_dist = Truncated(dist, var, Inf)
-		return var, mean(rand(trunc_dist, 10000))
-	end
-
-	var, cvar = estimate_cvar(dist, α)
-	
-	prisk = plot(xs, ys, color=theblue, lw=3, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlims=(0, 2000), ylims=(0, 4), label=false, xlabel="Loss of Separation (m)")
-	plot!(prisk, x->pdf(dist, x/2000), 2000 * var, 2000, lw=0, fillrange=0, color=0.5*thepurple, label=false)
-	vline!(prisk, [0.8 * 2000], linestyle=:dash, color=theblue, label="Expected Value")
-	vline!(prisk, [var * 2000], color=thepurple, label="VaR")
-	vline!(prisk, [cvar * 2000], linestyle=:dash, color=thepurple, label="CVaR")
-end
-
-# ╔═╡ 438624a9-9f72-4cdd-9c52-81fe3ac5c2cb
+# ╔═╡ 3d41d9f4-c785-4935-a5cc-7ba46d0d22dd
 md"""
-Show Estimated Weight: $(@bind show_weight CheckBox())
+show samples: $(@bind show_samps CheckBox())
 """
 
-# ╔═╡ ad2c11f8-df02-4029-b696-5b95daf8e84a
-@bind q1res Select(["no response", "a", "b"])
-
-# ╔═╡ 3f5b97f5-cfc7-4498-86f7-57aa14e2d240
-@bind q2res Select(["no response", "a", "b"])
-
-# ╔═╡ 5713e4c1-2ef6-4a68-a87a-b9099ff2a4ce
-@bind q3res Select(["no response", "a", "b"])
-
-# ╔═╡ bcdff5b0-520d-4b72-ab62-c9421eb69d79
-@bind q4res Select(["no response", "a", "b"])
-
-# ╔═╡ cfca85ec-4710-44cc-8cbc-ff165ba1db50
+# ╔═╡ 3b96e0e3-00b6-4bb3-acc1-c3cbce88d978
 md"""
- 𝑤₁: $(@bind w1 NumberField(0:0.1:1, default=0))   𝑤₂ $(@bind w2 NumberField(0:0.1:1, default=0))   𝑤₃ $(@bind w3 NumberField(0:0.1:1, default=0))
+Fuzzing Perception noise (σfuzz): $(@bind σfuzz Slider(0.1:0.01:0.3, show_value=true, default=0.1))
 """
 
-# ╔═╡ 564035c8-b6fd-47f9-be7c-dac779702652
-begin
-	init = HalfSpace(-[1.0, 1.0], -1.0)
-	qs = [q1, q2, q3, q4, q5]
-	res = [q1res, q2res, q3res, q4res]
-
-	p = plot(init, xlims=(0,1), ylims=(0,1), aspect_ratio=:equal, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", alpha=0.8, color=theblue, xlabel="\$w_1\$", ylabel="\$w_2\$", guidefont="Arial")
-	for (query, res) in zip(qs, res)
-		if res != "no response"
-			hs = get_halfspace(query, res)
-			plot!(p, hs, alpha=0.8, c=theblue)
-		end
-	end
-	if show_weight
-		scatter!(p, [w1], [w2], legend=false, markercolor=:white, markersize=6)
-	end
-	p
-end
-
-# ╔═╡ ebf35f13-e508-4d88-924d-6378739e745b
-prefres = [w1, w2, w3]' * q5[1] > [w1, w2, w3]' * q5[2] ? "a" : "b";
-
-# ╔═╡ 1f1a1b2c-61ab-409a-9672-8fcdf11eecaa
+# ╔═╡ e8dcc300-795c-4c6f-9c33-78d5bc097313
 md"""
-We infer that for the following query you prefer: $(prefres) 😄
+show samples: $(@bind show_samps2 CheckBox())
 """
-
-# ╔═╡ c6795b34-8cb8-4df3-92b7-0a1eef071fa9
-md"""
- $w$: $(@bind w Slider(0:0.5:10, show_value=true, default=0))
-"""
-
-# ╔═╡ 10c171c7-d94e-4f04-81fb-05cb218e8c50
-begin
-	times = collect(1:10)
-	τ = [-1.0, -3.2, 2.0, 1.5, 3.0, 0.5, -0.5, -2.0, -4.0, -1.5]
-
-	ψ = @formula ◊(xₜ -> xₜ > 0)
-	gradρ = ∇ρ̃(τ, ψ, w=w)[:]
-	
-	p1 = plot(times, τ, legend=false, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="Time (s)", ylabel="s", xlims=(1, 10), ylims=(-5, 4), c=:lightgray, lw=2, markershape=:circle)
-	hline!(p1, [ρ̃(τ, ψ, w=w)], c=theblue, linestyle=:dash, lw=1.0)
-	
-	p2 = scatter(times, gradρ, legend=false, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="Time (s)", ylabel="s", xlims=(1, 10), ylims=(-0.2, 1.2), c=theblue, markershape=:circle)
-	for (t, v) in zip(times, gradρ)
-		plot!(p2, [t, t], [0, v], c=theblue, lw=1)
-	end
-	hline!(p2, [0], c=:gray, linestyle=:dash, lw=0.5)
-
-	plot(p1, p2, layout=(2, 1))
-end
 
 # ╔═╡ 06edfbee-5d16-4e83-a4f9-caf5bd901c00
 @bind dark_mode DarkModeIndicator()
+
+# ╔═╡ 98ee4ce4-44cc-47d3-b5f0-7b483865a630
+begin
+	# StanfordAA228V.Ps(env::InvertedPendulum) = Product([Uniform(-π / 16, π / 16), Uniform(-1., 1.)])
+
+	function plot_distribution(D; title="", state_dist=false, samps=nothing)
+		xlim = state_dist ? (-0.5, 0.5) : (-0.5, 0.5)
+		ylim = state_dist ? (-1, 1) : (-0.5, 0.5)
+		xl = state_dist ? "θ" : "xθ"
+		yl = state_dist ? "ω" : "xω"
+		f(x, y) = pdf(D, [x, y])
+		x = collect(range(xlim[1], xlim[2], length=200))
+		y = collect(range(ylim[1], ylim[2], length=200))
+		z = @. f(x', y)
+		pl = contour(x, y, z, cbar=false, grid=false, bg="transparent", background_color_inside=:black, fg="white", aspect_ratio=:equal, xlims=xlim, ylims=ylim, color=cgrad([:black, theblue]), lw=3, xlabel=xl, ylabel=yl, title=title)
+		if !isnothing(samps)
+			scatter!(pl, first.(samps), last.(samps), markersize=1.25, markeralpha=0.75, markerstrokecolor=theblue, markercolor=theblue, legend=false)
+		end
+		return pl
+	end
+	
+	sys = System(
+		ProportionalController([-15.0, -8.0]),
+		InvertedPendulum(),
+		AdditiveNoiseSensor(MvNormal(zeros(2), σ^2*I))
+	)
+
+	ψ = LTLSpecification(@formula □(s -> abs(s[1]) < π / 4))
+
+	simulate(m) = [rollout(sys, d=41) for i in 1:m]
+	simulate(m, d) = [rollout(sys, d=d) for i in 1:m]
+
+	function set_aspect_ratio!(p)
+		x_range = xlims()[2] - xlims()[1]
+		y_range = ylims()[2] - ylims()[1]
+		plot!(p, ratio=x_range/y_range)
+	end
+		
+	rectangle(w, h, x, y) = Shape(x .+ [0,w,w,0], y .+ [0,0,h,h])
+	
+	function plot_it(sys, ψ, τ=missing;
+					is_dark_mode=dark_mode,
+					title="Inverted Pendulum",
+					max_lines=100, size=(680,350), plot_successes=true, kwargs...)
+		if is_dark_mode
+			p = plot(
+				size=size,
+				grid=false,
+				bg="transparent",
+				background_color_inside="#1A1A1A",
+				fg="white",
+			)
+		else
+			p = plot(
+				size=size,
+				grid=false,
+				bg="transparent",
+				background_color_inside="white",
+			)
+		end
+
+		X = range(0, step=sys.env.dt, length=length(τ[1]))
+		plot!(p, rectangle(X[end], 1, 0, π/4), opacity=0.5, color="#F5615C", label=false)
+		plot!(p, rectangle(X[end], 1, 0, -π/4-1), opacity=0.5, color="#F5615C", label=false)
+		xlabel!(p, "Time (s)")
+		ylabel!(p, "𝜃 (rad)")
+		title!(p, title)
+		xlims!(p, 0, X[end])
+		ylims!(p, -1.2, 1.2)
+		set_aspect_ratio!(p)
+	
+		function plot_pendulum_traj!(p, τ; lw=2, α=1, color="#009E73")
+			X = range(0, step=sys.env.dt, length=length(τ))
+			plot!(p, X, [step.s[1] for step in τ]; lw, color, α, label=false)
+		end
+	
+		if τ isa Vector{<:Vector}
+			# Multiple trajectories
+			τ_successes = filter(τᵢ->!isfailure(ψ, τᵢ), τ)
+			τ_failures = filter(τᵢ->isfailure(ψ, τᵢ), τ)
+			if plot_successes
+				for (i,τᵢ) in enumerate(τ_successes)
+					if i > max_lines
+						break
+					else
+						plot_pendulum_traj!(p, τᵢ; lw=1, α=0.75, color="#009E73")
+					end
+				end
+			end
+	
+			for τᵢ in τ_failures
+				plot_pendulum_traj!(p, τᵢ; lw=1, α=1, color="#F5615C")
+			end
+		elseif τ isa Vector
+			# Single trajectory
+			get_color(ψ, τ) = isfailure(ψ, τ) ? "#F5615C" : "#009E73"
+			plot_pendulum_traj!(p, τ; lw=2, color=get_color(ψ, τ))
+		end
+	
+		return p
+	end
+
+	function plot_both(sys, ψ, τ=missing;
+					is_dark_mode=dark_mode,
+					title="Inverted Pendulum",
+					max_lines=100, size=(680,350))
+		p1 = plot_it(sys, ψ, τ, is_dark_mode=dark_mode, title="Falsification", max_lines=max_lines, size=size)
+		p2 = plot_it(sys, ψ, τ, is_dark_mode=dark_mode, title="Failure Distribution", max_lines=max_lines, size=size, plot_successes=false)
+		return plot(p1, p2)
+	end
+
+	md"> _Plotting Code_"
+end
+
+# ╔═╡ b920cf06-342b-4144-9692-cef2899abf9e
+pnom = NominalTrajectoryDistribution(sys, 41);
+
+# ╔═╡ 41bfedc9-c772-4a76-876f-a7db89856153
+pnom.Ps
+
+# ╔═╡ 6a3b74a8-ebdd-4146-a648-c40a7b2d9f4a
+pnom.D
+
+# ╔═╡ 914ed33a-9bd6-40cc-a98f-0f17d193b956
+begin
+	o = [12, 17]
+	pnom.D.Da(o)
+end
+
+# ╔═╡ 16861869-778f-47e8-94dc-35ee6a91da69
+begin
+	s = [10, 15]
+	a = 6
+	pnom.D.Ds(s, a)
+end
+
+# ╔═╡ 6ce2b3cc-2e2f-459c-a176-99c3393c3450
+begin
+	pnom.D.Do(s)
+end
+
+# ╔═╡ 5b0e9411-67ab-4f6c-a7ec-75191dfa8f6f
+begin
+	struct PendulumFuzzingDist <: TrajectoryDistribution
+		Σₒ # sensor disturbance covariance
+		d  # depth
+	end
+
+	function StanfordAA228V.initial_state_distribution(p::PendulumFuzzingDist)
+		return pnom.Ps
+	end
+
+	function StanfordAA228V.disturbance_distribution(p::PendulumFuzzingDist, t)
+		return DisturbanceDistribution(
+				(o)->Deterministic(), # agent is deterministic
+				(s,a)->Deterministic(), # environment is deterministic
+				(s)->MvNormal(zeros(2), p.Σₒ) # fuzzing dist for observation noise
+		)
+	end
+
+	function StanfordAA228V.depth(p::PendulumFuzzingDist)
+		return p.d
+	end
+end
+
+# ╔═╡ 1e6b8a41-5349-410b-b7f0-40d4912d3a68
+pfuzz = PendulumFuzzingDist(σfuzz^2 * I(2), d)
+
+# ╔═╡ c9b8e50a-366f-4bdf-8cdb-89aef2f74cba
+plot_distribution(pnom.Ps, title="Pₛ", state_dist=true)
+
+# ╔═╡ c06bda0b-8340-418b-a872-97c183bd865f
+begin
+	Random.seed!(0)
+	τs = [rollout(sys, pnom) for i in 1:m] #simulate(m, d)
+	nfail = sum(isfailure(ψ, τ) for τ in τs)
+	failurestring = nfail == 1 ? "failure" : "failures"
+	trajstring = m == 1 ? "trajectory" : "trajectories"
+
+	Random.seed!(0)
+	τsfuzz = [rollout(sys, pfuzz) for i in 1:m]
+
+	md"> _Simulation Code_"
+end
+
+# ╔═╡ 82e1a12e-619e-46af-ad68-c32b68859449
+plot_it(sys, ψ, τs)
+
+# ╔═╡ efad6d2a-5f0f-4287-b13e-bb86a99838a5
+begin
+	if show_samps
+		samps = [step.o - step.s for τ in τs for step in τ]
+		plot_distribution(pnom.D.Do([0, 0]), title="Dₒ", samps=samps)
+	else
+		plot_distribution(pnom.D.Do([0, 0]), title="Dₒ")
+	end
+end
+
+# ╔═╡ 5dbec42b-1774-4cb7-b668-130aaedefee0
+begin
+	p1 = if show_samps2
+		samps2 = [step.o - step.s for τ in τs for step in τ]
+		plot_distribution(pnom.D.Do([0, 0]), title="Nominal", samps=samps2)
+	else
+		plot_distribution(pnom.D.Do([0, 0]), title="Nominal")
+	end
+
+	p2 = if show_samps2
+		sampsfuzz = [step.o - step.s for τ in τsfuzz for step in τ]
+		plot_distribution(MvNormal(zeros(2), pfuzz.Σₒ), title="Fuzzing", samps=sampsfuzz)
+	else
+		plot_distribution(MvNormal(zeros(2), pfuzz.Σₒ), title="Fuzzing")
+	end
+
+	p3 = plot_it(sys, ψ, τs, title="")
+
+	p4 = plot_it(sys, ψ, τsfuzz, title="")
+
+	plfuzz = plot(p1, p2, p3, p4, layout=(2, 2))
+end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
-LazySets = "b4f0291d-fe17-52bc-9479-3d1a343d9043"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoPapers = "d3cde879-03ee-4818-9d5f-9ea6cf0edfee"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
-SignalTemporalLogic = "a79a9ddd-d50e-4d85-a979-5d85760e62a0"
 StanfordAA228V = "6f6e590e-f8c2-4a21-9268-94576b9fb3b1"
 
 [compat]
 Distributions = "~0.25.115"
-LazySets = "~3.0.0"
 Plots = "~1.40.9"
 PlutoPapers = "~0.1.0"
 PlutoUI = "~0.7.60"
-SignalTemporalLogic = "~1.0.0"
 StanfordAA228V = "~0.1.22"
 """
 
@@ -304,7 +378,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.11.1"
 manifest_format = "2.0"
-project_hash = "c9784ea5d0ffc8e4ac7568bd2ad510036fe25b2a"
+project_hash = "f0bbc97fec849474226e9173fdf12ae9a9bb95f8"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -2191,34 +2265,30 @@ version = "1.4.1+2"
 """
 
 # ╔═╡ Cell order:
-# ╟─9f76c16b-6564-4614-b362-1b4a4804c89e
-# ╟─f7456e13-d5e8-4064-a138-e3c77ab1e106
-# ╟─1cfcbf7c-fa09-4755-bc3a-e3666a7fb1cb
-# ╟─4bf458ec-529e-45a5-a258-d799b44f7638
-# ╠═94faddc1-5e2d-4fd8-ad8f-9746e90b5dc3
-# ╟─5d81cee1-9eb8-4592-9aae-ecb79b8d106f
-# ╟─5b81efe7-0019-4f5b-aadb-980f7e87b4b9
-# ╟─a4848c23-17c3-42f0-87c9-13e9cdeb47bc
-# ╟─438624a9-9f72-4cdd-9c52-81fe3ac5c2cb
-# ╟─564035c8-b6fd-47f9-be7c-dac779702652
-# ╟─3afb60e5-e8a1-4318-95aa-2d575d2749d6
-# ╟─ad2c11f8-df02-4029-b696-5b95daf8e84a
-# ╟─2ffdc718-0dcf-4d0d-b29f-5d9c13baf184
-# ╟─3f5b97f5-cfc7-4498-86f7-57aa14e2d240
-# ╟─edc03e51-8c15-4a2c-95e5-d96bc92a3063
-# ╟─5713e4c1-2ef6-4a68-a87a-b9099ff2a4ce
-# ╟─95463860-4c32-4850-8837-c505ed08ac6b
-# ╟─bcdff5b0-520d-4b72-ab62-c9421eb69d79
-# ╟─cfca85ec-4710-44cc-8cbc-ff165ba1db50
-# ╟─ebf35f13-e508-4d88-924d-6378739e745b
-# ╟─1f1a1b2c-61ab-409a-9672-8fcdf11eecaa
-# ╟─4f9476b9-cd6d-47b9-9a66-30f01bff2723
-# ╟─748f98c8-ed69-4021-925e-a59641b3115e
-# ╟─e45364dd-ecaf-4b49-b98e-13f6670be244
-# ╟─93d48c9f-ec35-4f7b-9fcb-ab1d7f4c67d8
-# ╟─c6795b34-8cb8-4df3-92b7-0a1eef071fa9
-# ╟─10c171c7-d94e-4f04-81fb-05cb218e8c50
-# ╟─5e35b008-be58-4b31-9079-d2c5c8ed39af
+# ╟─2f308228-2806-4bdf-b7df-e000c6eb277a
+# ╟─19fb47bd-f479-4842-ad51-6f1af88c72f8
+# ╟─763e2587-81de-43b0-970b-511f7bdb48ba
+# ╟─cfb8f053-2a54-459a-8f10-f84f789257c8
+# ╟─934a618e-c62e-45fb-814e-8840202e2997
+# ╟─82e1a12e-619e-46af-ad68-c32b68859449
+# ╟─5eba1fee-bbc2-4019-a062-9b1d76dfa473
+# ╠═b920cf06-342b-4144-9692-cef2899abf9e
+# ╠═41bfedc9-c772-4a76-876f-a7db89856153
+# ╟─c9b8e50a-366f-4bdf-8cdb-89aef2f74cba
+# ╠═6a3b74a8-ebdd-4146-a648-c40a7b2d9f4a
+# ╠═914ed33a-9bd6-40cc-a98f-0f17d193b956
+# ╠═16861869-778f-47e8-94dc-35ee6a91da69
+# ╠═6ce2b3cc-2e2f-459c-a176-99c3393c3450
+# ╟─3d41d9f4-c785-4935-a5cc-7ba46d0d22dd
+# ╟─efad6d2a-5f0f-4287-b13e-bb86a99838a5
+# ╟─8ed40ee7-1d65-4ba3-a7f6-2e475fb3b0ef
+# ╟─3b96e0e3-00b6-4bb3-acc1-c3cbce88d978
+# ╟─e8dcc300-795c-4c6f-9c33-78d5bc097313
+# ╟─5dbec42b-1774-4cb7-b668-130aaedefee0
+# ╠═5b0e9411-67ab-4f6c-a7ec-75191dfa8f6f
+# ╠═1e6b8a41-5349-410b-b7f0-40d4912d3a68
+# ╟─98ee4ce4-44cc-47d3-b5f0-7b483865a630
+# ╟─c06bda0b-8340-418b-a872-97c183bd865f
 # ╟─39b9a784-2c8b-46a2-a414-1252638ade67
 # ╟─480491fb-9f19-49ee-8f0f-0bd8c1c352d8
 # ╟─06edfbee-5d16-4e83-a4f9-caf5bd901c00
