@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.20.3
+# v0.20.4
 
 using Markdown
 using InteractiveUtils
@@ -26,7 +26,7 @@ begin
 	using Random
 	using PlutoPapers
 
-	default(fontfamily="Computer Modern", framestyle=:box) # LaTeX-style plotting
+	default(fontfamily="Computer Modern", framestyle=:box, guidefont="Computer Modern", legendfont=:white, foreground_color_legend=:white) # LaTeX-style plotting
 	theblue = RGB(128 / 255, 185 / 255, 255 / 255)
 	thepurple = RGB(195 / 255, 184 / 255, 255 / 255)
 	nothing
@@ -136,17 +136,18 @@ show samples: $(@bind show_samps2 CheckBox())
 # ╔═╡ 98ee4ce4-44cc-47d3-b5f0-7b483865a630
 begin
 	# StanfordAA228V.Ps(env::InvertedPendulum) = Product([Uniform(-π / 16, π / 16), Uniform(-1., 1.)])
+	fg = dark_mode ? "white" : "black"
 
 	function plot_distribution(D; title="", state_dist=false, samps=nothing)
 		xlim = state_dist ? (-0.5, 0.5) : (-0.5, 0.5)
 		ylim = state_dist ? (-1, 1) : (-0.5, 0.5)
-		xl = state_dist ? "θ" : "xθ"
-		yl = state_dist ? "ω" : "xω"
+		xl = state_dist ? L"\theta" : L"x_\theta"
+		yl = state_dist ? L"\omega" : L"x_\omega"
 		f(x, y) = pdf(D, [x, y])
 		x = collect(range(xlim[1], xlim[2], length=200))
 		y = collect(range(ylim[1], ylim[2], length=200))
 		z = @. f(x', y)
-		pl = contour(x, y, z, cbar=false, grid=false, bg="transparent", background_color_inside=:black, fg="white", aspect_ratio=:equal, xlims=xlim, ylims=ylim, color=cgrad([:black, theblue]), lw=3, xlabel=xl, ylabel=yl, title=title)
+		pl = contour(x, y, z, cbar=false, grid=false, bg="transparent", background_color_inside=:black, fg=fg, aspect_ratio=:equal, xlims=xlim, ylims=ylim, color=cgrad([:black, theblue]), lw=3, xlabel=xl, ylabel=yl, title=title)
 		if !isnothing(samps)
 			scatter!(pl, first.(samps), last.(samps), markersize=1.25, markeralpha=0.75, markerstrokecolor=theblue, markercolor=theblue, legend=false)
 		end
@@ -194,7 +195,7 @@ begin
 		end
 
 		X = range(0, step=sys.env.dt, length=length(τ[1]))
-		plot!(p, rectangle(X[end], 1, 0, π/4), opacity=0.5, color="#F5615C", label=false)
+		plot!(p, rectangle(X[end], 1, 0, π/4), opacity=0.5, color="#F5615C", label=false, margin=3Plots.mm)
 		plot!(p, rectangle(X[end], 1, 0, -π/4-1), opacity=0.5, color="#F5615C", label=false)
 		xlabel!(p, "Time (s)")
 		ylabel!(p, "𝜃 (rad)")
@@ -376,7 +377,7 @@ StanfordAA228V = "~0.1.22"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.11.1"
+julia_version = "1.11.2"
 manifest_format = "2.0"
 project_hash = "f0bbc97fec849474226e9173fdf12ae9a9bb95f8"
 
@@ -2270,7 +2271,7 @@ version = "1.4.1+2"
 # ╟─763e2587-81de-43b0-970b-511f7bdb48ba
 # ╟─cfb8f053-2a54-459a-8f10-f84f789257c8
 # ╟─934a618e-c62e-45fb-814e-8840202e2997
-# ╟─82e1a12e-619e-46af-ad68-c32b68859449
+# ╠═82e1a12e-619e-46af-ad68-c32b68859449
 # ╟─5eba1fee-bbc2-4019-a062-9b1d76dfa473
 # ╠═b920cf06-342b-4144-9692-cef2899abf9e
 # ╠═41bfedc9-c772-4a76-876f-a7db89856153

@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.20.3
+# v0.20.4
 
 using Markdown
 using InteractiveUtils
@@ -29,7 +29,7 @@ begin
 	using Turing
 	using PlutoPapers
 
-	default(fontfamily="Computer Modern", framestyle=:box) # LaTeX-style plotting
+	default(fontfamily="Computer Modern", framestyle=:box, guidefont="Computer Modern", legendfont=:white, foreground_color_legend=:white) # LaTeX-style plotting
 	theblue = RGB(128 / 255, 185 / 255, 255 / 255)
 	thepurple = RGB(195 / 255, 184 / 255, 255 / 255)
 	nothing
@@ -309,9 +309,6 @@ md"""
 # ╔═╡ 74dfa650-15d7-4f7d-ad27-11d75b9f5b0b
 centered(LocalResource(joinpath(@__DIR__, "..", "media", "normalizing_flows.gif")))
 
-# ╔═╡ b92aa8c8-29c8-4ea4-89fb-73cd4f466346
-centered(LocalResource(joinpath(@__DIR__, "..", "media", "dist_transform.svg")))
-
 # ╔═╡ 28b11a32-f2dd-45af-8cbc-78f5b689c16a
 md"""
  $\Sigma_x$: $(@bind Σx Slider(0.5:0.05:1.5, show_value=true, default=1.0))
@@ -357,6 +354,17 @@ md"""
 Number of data points: $(@bind npoints NumberField(0:20:200, default=20))
 """
 
+# ╔═╡ 1adefa8e-faeb-4783-88d3-45be4ffa5a4b
+md"""
+Number same: $(@bind nsame NumberField(0:1:50, default=0))
+Number different: $(@bind ndiff NumberField(0:1:50, default=0))
+
+Posterior distribution:
+"""
+
+# ╔═╡ 8acdb942-28ec-4f28-ad31-1fc98ce09283
+posterior = Beta(prior.α + nsame, prior.β + ndiff);
+
 # ╔═╡ 01c52339-ebff-49f7-a34e-882270c33baa
 begin
 	struct BayesianParameterEstimation
@@ -392,17 +400,6 @@ begin
 	θdist = fit_bayesian(alg_bayesian, zip(first.(data)[inds], last.(data)[inds]))
 end;
 
-# ╔═╡ 1adefa8e-faeb-4783-88d3-45be4ffa5a4b
-md"""
-Number same: $(@bind nsame NumberField(0:1:50, default=0))
-Number different: $(@bind ndiff NumberField(0:1:50, default=0))
-
-Posterior distribution:
-"""
-
-# ╔═╡ 8acdb942-28ec-4f28-ad31-1fc98ce09283
-posterior = Beta(prior.α + nsame, prior.β + ndiff);
-
 # ╔═╡ 9a04b253-0bbe-4aaf-8312-991b75af77d2
 1 - cdf(posterior, 0.5)
 
@@ -414,6 +411,16 @@ Show probability same is greater than 0.5: $(@bind show_same CheckBox())
 # ╔═╡ 06edfbee-5d16-4e83-a4f9-caf5bd901c00
 @bind dark_mode DarkModeIndicator()
 
+# ╔═╡ b92aa8c8-29c8-4ea4-89fb-73cd4f466346
+Div(
+	LocalResource(joinpath(@__DIR__, "..", "media", "dist_transform.svg"));
+	style=Dict(
+		"display"=>"flex",
+		"justify-content"=>"center",
+		"background"=>dark_mode ? "#1F1F1F" : ""
+	)
+)
+
 # ╔═╡ 22a94e1b-8137-4388-8743-817017778f6a
 begin
 	Σ = [Σx Σxy; Σxy Σy]
@@ -423,9 +430,9 @@ begin
 	y = collect(range(-3, 3, length=200))
 	z = @. f(x', y)
 	if dark_mode
-		c = contour(x, y, z, cbar=false, grid=false, bg="transparent", background_color_inside=:black, fg="white", aspect_ratio=:equal, xlims=(-3, 3), ylims=(-3, 3), color=cgrad([:black, theblue]), lw=3, ticks=:none, xlabel="\$x\$", ylabel="\$y\$", guidefont="Arial")
+		c = contour(x, y, z, cbar=false, grid=false, bg="transparent", background_color_inside=:black, fg="white", aspect_ratio=:equal, xlims=(-3, 3), ylims=(-3, 3), color=cgrad([:black, theblue]), lw=3, ticks=:none, xlabel="\$x\$", ylabel="\$y\$")
 	else
-		c = contour(x, y, z, cbar=false, grid=false, bg="transparent", background_color_inside=:black, aspect_ratio=:equal, xlims=(-3, 3), ylims=(-3, 3), color=cgrad([:black, theblue]), lw=3, ticks=:none, xlabel="\$x\$", ylabel="\$y\$", guidefont="Arial")
+		c = contour(x, y, z, cbar=false, grid=false, bg="transparent", background_color_inside=:black, aspect_ratio=:equal, xlims=(-3, 3), ylims=(-3, 3), color=cgrad([:black, theblue]), lw=3, ticks=:none, xlabel="\$x\$", ylabel="\$y\$")
 	end
 	c
 end
@@ -455,12 +462,12 @@ begin
 		p = heatmap(xsmap, ysmap, zsmap, cbar=false, grid=false, bg="transparent", background_color_inside=:black, fg="white", aspect_ratio=:equal, xlims=(-0.2, 0.2), ylims=(-0.2, 0.2), color=cgrad([:black, theblue]), alpha=0.75)
 		llike = sum(logpdf(Normal(θ₁ * x + θ₂, θ₃), y) for (x, y) in zip(s, o))
 		title!(p, "Log likelihood: $(round(llike, digits=2))")
-		scatter!(p, s, o, c=:pink, bg="transparent", background_color_inside="#1A1A1A", fg="white", legend=false, aspect_ratio=:equal, xlims=(-0.2,0.2), ylims=(-0.2,0.2), xlabel="\$s\$", ylabel="\$o\$", markerstrokecolor=:pink, markersize=2, markeralpha=0.5, guidefont="Arial")
+		scatter!(p, s, o, c=:pink, bg="transparent", background_color_inside="#1A1A1A", fg="white", legend=false, aspect_ratio=:equal, xlims=(-0.2,0.2), ylims=(-0.2,0.2), xlabel="\$s\$", ylabel="\$o\$", markerstrokecolor=:pink, markersize=2, markeralpha=0.5)
 	else
 		p = heatmap(xsmap, ysmap, zsmap, cbar=false, grid=false, bg="transparent", background_color_inside=:black, aspect_ratio=:equal, xlims=(-0.2, 0.2), ylims=(-0.2, 0.2), color=cgrad([:black, theblue]), alpha=0.75)
 		llike = sum(logpdf(Normal(θ₁ * x + θ₂, θ₃), y) for (x, y) in zip(s, o))
 		title!(p, "Log likelihood: $(round(llike, digits=2))")
-		scatter!(p, s, o, c=:pink, bg="transparent", background_color_inside="#1A1A1A", legend=false, aspect_ratio=:equal, xlims=(-0.2,0.2), ylims=(-0.2,0.2), xlabel="\$s\$", ylabel="\$o\$", markerstrokecolor=:pink, markersize=2, markeralpha=0.5, guidefont="Arial")
+		scatter!(p, s, o, c=:pink, bg="transparent", background_color_inside="#1A1A1A", legend=false, aspect_ratio=:equal, xlims=(-0.2,0.2), ylims=(-0.2,0.2), xlabel="\$s\$", ylabel="\$o\$", markerstrokecolor=:pink, markersize=2, markeralpha=0.5)
 	end
 	p
 end
@@ -473,12 +480,12 @@ begin
 		p3 = heatmap(xsmap, ysmap, zsmap3, cbar=false, grid=false, bg="transparent", background_color_inside=:black, fg="white", aspect_ratio=:equal, xlims=(-0.2, 0.2), ylims=(-0.2, 0.2), color=cgrad([:black, theblue]), alpha=0.75)
 		llike3 = sum(logpdf(Normal(θ[1] * x + θ[2], θ[3]), y) for (x, y) in zip(s, o))
 		title!(p3, "Log likelihood: $(round(llike3, digits=2))")
-		scatter!(p3, s, o, c=:pink, bg="transparent", background_color_inside="#1A1A1A", fg="white", legend=false, aspect_ratio=:equal, xlims=(-0.2,0.2), ylims=(-0.2,0.2), xlabel="\$s\$", ylabel="\$o\$", markerstrokecolor=:pink, markersize=2, markeralpha=0.5, guidefont="Arial")
+		scatter!(p3, s, o, c=:pink, bg="transparent", background_color_inside="#1A1A1A", fg="white", legend=false, aspect_ratio=:equal, xlims=(-0.2,0.2), ylims=(-0.2,0.2), xlabel="\$s\$", ylabel="\$o\$", markerstrokecolor=:pink, markersize=2, markeralpha=0.5)
 	else
 		p3 = heatmap(xsmap, ysmap, zsmap3, cbar=false, grid=false, bg="transparent", background_color_inside=:black, aspect_ratio=:equal, xlims=(-0.2, 0.2), ylims=(-0.2, 0.2), color=cgrad([:black, theblue]), alpha=0.75)
 		llike3 = sum(logpdf(Normal(θ[1] * x + θ[2], θ[3]), y) for (x, y) in zip(s, o))
 		title!(p3, "Log likelihood: $(round(llike3, digits=2))")
-		scatter!(p3, s, o, c=:pink, bg="transparent", background_color_inside="#1A1A1A", legend=false, aspect_ratio=:equal, xlims=(-0.2,0.2), ylims=(-0.2,0.2), xlabel="\$s\$", ylabel="\$o\$", markerstrokecolor=:pink, markersize=2, markeralpha=0.5, guidefont="Arial")
+		scatter!(p3, s, o, c=:pink, bg="transparent", background_color_inside="#1A1A1A", legend=false, aspect_ratio=:equal, xlims=(-0.2,0.2), ylims=(-0.2,0.2), xlabel="\$s\$", ylabel="\$o\$", markerstrokecolor=:pink, markersize=2, markeralpha=0.5)
 	end
 	p3
 end
@@ -487,9 +494,9 @@ end
 begin
 	function plot_data(data, var; xlims, dm=dark_mode)
 		if dm
-			p = histogram(data, normalize=:pdf, legend=false, c=theblue, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="\$$var\$", ylabel="\$p($var)\$", size=(700, 300), title="Expected Value: $(round(mean(data), digits=2))", xlims=xlims, guidefont="Arial")
+			p = histogram(data, normalize=:pdf, legend=false, c=theblue, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="\$$var\$", ylabel="\$p($var)\$", size=(700, 300), title="Expected Value: $(round(mean(data), digits=2))", xlims=xlims)
 		else
-			p = histogram(data, normalize=:pdf, legend=false, c=theblue, grid=false, bg="transparent", background_color_inside="#1A1A1A", xlabel="\$$var\$", ylabel="\$p($var)\$", size=(350, 200), title="Expected Value: $(round(mean(data), digits=2))", xlims=xlims, guidefont="Arial")
+			p = histogram(data, normalize=:pdf, legend=false, c=theblue, grid=false, bg="transparent", background_color_inside="#1A1A1A", xlabel="\$$var\$", ylabel="\$p($var)\$", size=(350, 200), title="Expected Value: $(round(mean(data), digits=2))", xlims=xlims)
 		end
 		return p
 	end
@@ -497,7 +504,7 @@ begin
 	pa = plot_data(θdist[Symbol("θ[1]")].data[:], "\\theta_1", xlims=(0,2))
 	pb = plot_data(θdist[Symbol("θ[2]")].data[:], "\\theta_2", xlims=(-0.1,0.1))
 	pc = plot_data(exp.(θdist[Symbol("θ[3]")].data[:]), "\\theta_3", xlims=(0,0.1))
-	plot(pa, pb, pc, layout=(1, 3)) #, size=(1100, 400))
+	plot(pa, pb, pc, layout=(1, 3), margin=5Plots.mm, size=(1100, 400))
 end
 
 # ╔═╡ 24cf8fad-2496-46ac-8ecb-1dd51b5cc561
@@ -506,7 +513,7 @@ begin
 	xspost = collect(range(0, 1, length=201))
 	yspost = pdf.(posterior, xspost)
 	plo = plot(xspost, yspost, xlims=(0,1), ylims=(0,maximum(yspost)+0.1), legend=false,
-	lw=2, c=theblue, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg=fg, xlabel="\$\\theta\$", ylabel="\$P(\\theta \\mid D)\$", size=(300, 300), title="Beta($(Int(posterior.α)), $(Int(posterior.β)))", guidefont="Arial")
+	lw=2, c=theblue, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg=fg, xlabel="\$\\theta\$", ylabel="\$P(\\theta \\mid D)\$", size=(300, 300), title="Beta($(Int(posterior.α)), $(Int(posterior.β)))")
 	if show_same
 		xs50 = collect(range(0.5, 1, length=201))
 		ys50 = pdf.(posterior, xs50)
@@ -520,9 +527,9 @@ begin
 	function plot_samples_v_dist(samples, dist; xlims=(-4, 4), ylims=(0, 0.6), cbins=theblue, cdist=:magenta, nbins=35, show_likelihood=show_like, dm=dark_mode)
 		b_range = range(xlims[1], xlims[2], length=nbins)
 		if dm
-			p = histogram(samples, normalize=:pdf, legend=false, xlims=xlims, ylims=ylims, c=cbins, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="\$x\$", ylabel="\$p(x)\$", bins=b_range, guidefont="Arial")
+			p = histogram(samples, normalize=:pdf, legend=false, xlims=xlims, ylims=ylims, c=cbins, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="\$x\$", ylabel="\$p(x)\$", bins=b_range)
 		else
-			p = histogram(samples, normalize=:pdf, legend=false, xlims=xlims, ylims=ylims, c=cbins, grid=false, bg="transparent", background_color_inside="#1A1A1A", xlabel="\$x\$", ylabel="\$p(x)\$", bins=b_range, guidefont="Arial")
+			p = histogram(samples, normalize=:pdf, legend=false, xlims=xlims, ylims=ylims, c=cbins, grid=false, bg="transparent", background_color_inside="#1A1A1A", xlabel="\$x\$", ylabel="\$p(x)\$", bins=b_range)
 		end
 		xs = collect(range(xlims[1], xlims[2], length=150))
 		ys = pdf.(dist, xs)
@@ -537,9 +544,9 @@ begin
 	function plot_samples_v_pdf(samples, dist; xlims=(-4, 4), ylims=(0, 0.6), cbins=theblue, cdist=:magenta, nbins=35, dm=dark_mode)
 		b_range = range(xlims[1], xlims[2], length=nbins)
 		if dm
-			p = histogram(samples, normalize=:pdf, legend=false, xlims=xlims, ylims=ylims, c=cbins, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="\$x\$", ylabel="\$p(x)\$", bins=b_range, guidefont="Arial")
+			p = histogram(samples, normalize=:pdf, legend=false, xlims=xlims, ylims=ylims, c=cbins, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="\$x\$", ylabel="\$p(x)\$", bins=b_range)
 		else
-			p = histogram(samples, normalize=:pdf, legend=false, xlims=xlims, ylims=ylims, c=cbins, grid=false, bg="transparent", background_color_inside="#1A1A1A", xlabel="\$x\$", ylabel="\$p(x)\$", bins=b_range, guidefont="Arial")
+			p = histogram(samples, normalize=:pdf, legend=false, xlims=xlims, ylims=ylims, c=cbins, grid=false, bg="transparent", background_color_inside="#1A1A1A", xlabel="\$x\$", ylabel="\$p(x)\$", bins=b_range)
 		end
 		xs = collect(range(xlims[1], xlims[2], length=150))
 		ys = dist.(xs)
@@ -550,9 +557,9 @@ begin
 	function plot_samples(samples; xlims=(-4, 4), ylims=(0, 0.6), cbins=theblue, nbins=35, dm=dark_mode)
 		b_range = range(xlims[1], xlims[2], length=nbins)
 		if dm
-			p = histogram(samples, normalize=:pdf, legend=false, xlims=xlims, ylims=ylims, c=cbins, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="\$x\$", ylabel="\$p(x)\$", bins=b_range, guidefont="Arial")
+			p = histogram(samples, normalize=:pdf, legend=false, xlims=xlims, ylims=ylims, c=cbins, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg="white", xlabel="\$x\$", ylabel="\$p(x)\$", bins=b_range)
 		else
-			p = histogram(samples, normalize=:pdf, legend=false, xlims=xlims, ylims=ylims, c=cbins, grid=false, bg="transparent", background_color_inside="#1A1A1A", xlabel="\$x\$", ylabel="\$p(x)\$", bins=b_range, guidefont="Arial")
+			p = histogram(samples, normalize=:pdf, legend=false, xlims=xlims, ylims=ylims, c=cbins, grid=false, bg="transparent", background_color_inside="#1A1A1A", xlabel="\$x\$", ylabel="\$p(x)\$", bins=b_range)
 		end
 		return p
 	end
@@ -617,7 +624,7 @@ Turing = "~0.35.5"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.11.1"
+julia_version = "1.11.2"
 manifest_format = "2.0"
 project_hash = "6ef60562d95491b497e35dbd2c8b02c3daacfc52"
 

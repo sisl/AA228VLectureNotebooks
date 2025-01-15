@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.20.3
+# v0.20.4
 
 using Markdown
 using InteractiveUtils
@@ -26,7 +26,7 @@ begin
 	using Random
 	using PlutoPapers
 
-	default(fontfamily="Computer Modern", framestyle=:box) # LaTeX-style plotting
+	default(fontfamily="Computer Modern", framestyle=:box, guidefont="Computer Modern", legendfont=:white, foreground_color_legend=:white) # LaTeX-style plotting
 end;
 
 # ╔═╡ 2f308228-2806-4bdf-b7df-e000c6eb277a
@@ -232,7 +232,7 @@ StanfordAA228V = "~0.1.22"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.11.1"
+julia_version = "1.11.2"
 manifest_format = "2.0"
 project_hash = "f0bbc97fec849474226e9173fdf12ae9a9bb95f8"
 

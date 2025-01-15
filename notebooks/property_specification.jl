@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.20.3
+# v0.20.4
 
 using Markdown
 using InteractiveUtils
@@ -28,7 +28,7 @@ begin
 	using PlutoPapers
 	using SignalTemporalLogic
 
-	default(fontfamily="Computer Modern", framestyle=:box) # LaTeX-style plotting
+	default(fontfamily="Computer Modern", framestyle=:box, guidefont="Computer Modern", legendfont=:white, foreground_color_legend=:white) # LaTeX-style plotting
 	theblue = RGB(128 / 255, 185 / 255, 255 / 255)
 	thepurple = RGB(195 / 255, 184 / 255, 255 / 255)
 	nothing
@@ -216,7 +216,9 @@ md"""
 @bind dark_mode DarkModeIndicator()
 
 # ╔═╡ 430eb6ba-aaa9-4560-989f-d5df1d93b0a1
-fg = dark_mode ? "white" : "black";
+begin
+	fg = dark_mode ? "white" : "black"
+end;
 
 # ╔═╡ 94faddc1-5e2d-4fd8-ad8f-9746e90b5dc3
 begin
@@ -245,7 +247,7 @@ begin
 	qs = [q1, q2, q3, q4, q5]
 	res = [q1res, q2res, q3res, q4res]
 
-	p = plot(init, xlims=(0,1), ylims=(0,1), aspect_ratio=:equal, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg=fg, alpha=0.8, color=theblue, xlabel="\$w_1\$", ylabel="\$w_2\$", guidefont="Arial")
+	p = plot(init, xlims=(0,1), ylims=(0,1), aspect_ratio=:equal, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg=fg, alpha=0.8, color=theblue, xlabel="\$w_1\$", ylabel="\$w_2\$")
 	for (query, res) in zip(qs, res)
 		if res != "no response"
 			hs = get_halfspace(query, res)
@@ -305,7 +307,7 @@ StanfordAA228V = "~0.1.22"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.11.1"
+julia_version = "1.11.2"
 manifest_format = "2.0"
 project_hash = "c9784ea5d0ffc8e4ac7568bd2ad510036fe25b2a"
 
