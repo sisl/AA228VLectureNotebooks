@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.20.4
+# v0.20.3
 
 using Markdown
 using InteractiveUtils
@@ -26,7 +26,7 @@ begin
 	using Random
 	using PlutoPapers
 
-	default(fontfamily="Computer Modern", framestyle=:box, guidefont="Computer Modern", legendfont=:white, foreground_color_legend=:white) # LaTeX-style plotting
+	default(fontfamily="Computer Modern", framestyle=:box) # LaTeX-style plotting
 	theblue = RGB(128 / 255, 185 / 255, 255 / 255)
 	thepurple = RGB(195 / 255, 184 / 255, 255 / 255)
 	nothing
@@ -136,18 +136,17 @@ show samples: $(@bind show_samps2 CheckBox())
 # ╔═╡ 98ee4ce4-44cc-47d3-b5f0-7b483865a630
 begin
 	# StanfordAA228V.Ps(env::InvertedPendulum) = Product([Uniform(-π / 16, π / 16), Uniform(-1., 1.)])
-	fg = dark_mode ? "white" : "black"
 
 	function plot_distribution(D; title="", state_dist=false, samps=nothing)
 		xlim = state_dist ? (-0.5, 0.5) : (-0.5, 0.5)
 		ylim = state_dist ? (-1, 1) : (-0.5, 0.5)
-		xl = state_dist ? L"\theta" : L"x_\theta"
-		yl = state_dist ? L"\omega" : L"x_\omega"
+		xl = state_dist ? "θ" : "xθ"
+		yl = state_dist ? "ω" : "xω"
 		f(x, y) = pdf(D, [x, y])
 		x = collect(range(xlim[1], xlim[2], length=200))
 		y = collect(range(ylim[1], ylim[2], length=200))
 		z = @. f(x', y)
-		pl = contour(x, y, z, cbar=false, grid=false, bg="transparent", background_color_inside=:black, fg=fg, aspect_ratio=:equal, xlims=xlim, ylims=ylim, color=cgrad([:black, theblue]), lw=3, xlabel=xl, ylabel=yl, title=title)
+		pl = contour(x, y, z, cbar=false, grid=false, bg="transparent", background_color_inside=:black, fg="white", aspect_ratio=:equal, xlims=xlim, ylims=ylim, color=cgrad([:black, theblue]), lw=3, xlabel=xl, ylabel=yl, title=title)
 		if !isnothing(samps)
 			scatter!(pl, first.(samps), last.(samps), markersize=1.25, markeralpha=0.75, markerstrokecolor=theblue, markercolor=theblue, legend=false)
 		end
@@ -195,7 +194,7 @@ begin
 		end
 
 		X = range(0, step=sys.env.dt, length=length(τ[1]))
-		plot!(p, rectangle(X[end], 1, 0, π/4), opacity=0.5, color="#F5615C", label=false, margin=3Plots.mm)
+		plot!(p, rectangle(X[end], 1, 0, π/4), opacity=0.5, color="#F5615C", label=false)
 		plot!(p, rectangle(X[end], 1, 0, -π/4-1), opacity=0.5, color="#F5615C", label=false)
 		xlabel!(p, "Time (s)")
 		ylabel!(p, "𝜃 (rad)")
@@ -258,8 +257,14 @@ pnom.D
 
 # ╔═╡ 914ed33a-9bd6-40cc-a98f-0f17d193b956
 begin
-	o = [12, 17]
-	pnom.D.Da(o)
+	o1 = [12, 17]
+	pnom.D.Da(o1)
+end
+
+# ╔═╡ 902d6217-1bfe-4a54-a214-ba10cdf932dc
+begin
+	o2 = [1, 5]
+	pnom.D.Da(o2)
 end
 
 # ╔═╡ 16861869-778f-47e8-94dc-35ee6a91da69
@@ -272,6 +277,11 @@ end
 # ╔═╡ 6ce2b3cc-2e2f-459c-a176-99c3393c3450
 begin
 	pnom.D.Do(s)
+end
+
+# ╔═╡ 3b29be8e-d279-401f-bd2a-478e6ef57ac8
+begin
+	pnom.D.Do([0, 0])
 end
 
 # ╔═╡ 5b0e9411-67ab-4f6c-a7ec-75191dfa8f6f
@@ -299,7 +309,7 @@ begin
 end
 
 # ╔═╡ 1e6b8a41-5349-410b-b7f0-40d4912d3a68
-pfuzz = PendulumFuzzingDist(σfuzz^2 * I(2), d)
+pfuzz = PendulumFuzzingDist(σfuzz^2 * I(2), d);
 
 # ╔═╡ c9b8e50a-366f-4bdf-8cdb-89aef2f74cba
 plot_distribution(pnom.Ps, title="Pₛ", state_dist=true)
@@ -307,7 +317,7 @@ plot_distribution(pnom.Ps, title="Pₛ", state_dist=true)
 # ╔═╡ c06bda0b-8340-418b-a872-97c183bd865f
 begin
 	Random.seed!(0)
-	τs = [rollout(sys, pnom) for i in 1:m] #simulate(m, d)
+	τs = [StanfordAA228V.rollout(sys, pnom) for i in 1:m] #simulate(m, d)
 	nfail = sum(isfailure(ψ, τ) for τ in τs)
 	failurestring = nfail == 1 ? "failure" : "failures"
 	trajstring = m == 1 ? "trajectory" : "trajectories"
@@ -377,7 +387,7 @@ StanfordAA228V = "~0.1.22"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.11.2"
+julia_version = "1.11.1"
 manifest_format = "2.0"
 project_hash = "f0bbc97fec849474226e9173fdf12ae9a9bb95f8"
 
@@ -2271,23 +2281,25 @@ version = "1.4.1+2"
 # ╟─763e2587-81de-43b0-970b-511f7bdb48ba
 # ╟─cfb8f053-2a54-459a-8f10-f84f789257c8
 # ╟─934a618e-c62e-45fb-814e-8840202e2997
-# ╠═82e1a12e-619e-46af-ad68-c32b68859449
+# ╟─82e1a12e-619e-46af-ad68-c32b68859449
 # ╟─5eba1fee-bbc2-4019-a062-9b1d76dfa473
 # ╠═b920cf06-342b-4144-9692-cef2899abf9e
 # ╠═41bfedc9-c772-4a76-876f-a7db89856153
 # ╟─c9b8e50a-366f-4bdf-8cdb-89aef2f74cba
 # ╠═6a3b74a8-ebdd-4146-a648-c40a7b2d9f4a
 # ╠═914ed33a-9bd6-40cc-a98f-0f17d193b956
+# ╠═902d6217-1bfe-4a54-a214-ba10cdf932dc
 # ╠═16861869-778f-47e8-94dc-35ee6a91da69
 # ╠═6ce2b3cc-2e2f-459c-a176-99c3393c3450
+# ╠═3b29be8e-d279-401f-bd2a-478e6ef57ac8
 # ╟─3d41d9f4-c785-4935-a5cc-7ba46d0d22dd
 # ╟─efad6d2a-5f0f-4287-b13e-bb86a99838a5
 # ╟─8ed40ee7-1d65-4ba3-a7f6-2e475fb3b0ef
 # ╟─3b96e0e3-00b6-4bb3-acc1-c3cbce88d978
+# ╠═1e6b8a41-5349-410b-b7f0-40d4912d3a68
 # ╟─e8dcc300-795c-4c6f-9c33-78d5bc097313
 # ╟─5dbec42b-1774-4cb7-b668-130aaedefee0
 # ╠═5b0e9411-67ab-4f6c-a7ec-75191dfa8f6f
-# ╠═1e6b8a41-5349-410b-b7f0-40d4912d3a68
 # ╟─98ee4ce4-44cc-47d3-b5f0-7b483865a630
 # ╟─c06bda0b-8340-418b-a872-97c183bd865f
 # ╟─39b9a784-2c8b-46a2-a414-1252638ade67
