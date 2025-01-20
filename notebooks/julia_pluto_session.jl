@@ -1215,7 +1215,7 @@ You can make an arbitrary composite type "callable" using the following syntax.
 Reference: [Julia docs: Function-like objects](https://docs.julialang.org/en/v1/manual/methods/#Function-like-objects)
 """
 
-# ╔═╡ 05053700-ab74-4bde-893c-f4958ac3f73f
+# ╔═╡ fc607c2c-e153-461b-9e00-e7e478e3266f
 begin
 	struct GaussianSensor
 		Do::Function # distribution = Do(s)
@@ -1236,6 +1236,27 @@ sensor(10)
 
 # ╔═╡ 5808f5d3-8bbd-4df6-8502-0e40335922e4
 sensor(50)
+
+# ╔═╡ edc61fc4-5123-439e-ab0d-29fc8cee5cf2
+md"""
+This is similar to Python's `__call__` method on a class if you're used to that.
+
+```python
+from scipy.stats import norm
+
+class GaussianSensor:
+    def __init__(self, Do):
+        self.Do = Do
+
+    def __call__(self, s):
+        return self.Do(s).rvs()
+
+Do = lambda s: norm(loc=s, scale=1)
+
+sensor = GaussianSensor(Do)
+sensor(10)
+```
+"""
 
 # ╔═╡ cd775016-1af0-494b-b8d6-abc98afd8cae
 md"""
@@ -3677,11 +3698,12 @@ version = "1.4.1+2"
 # ╠═e56132c3-cd06-4f3c-9e18-31b30b39163c
 # ╟─f6c78515-7efe-429f-94df-9413f6974410
 # ╟─49e1b7c3-7ae0-480f-acc6-0ec08d91564e
-# ╠═05053700-ab74-4bde-893c-f4958ac3f73f
+# ╠═fc607c2c-e153-461b-9e00-e7e478e3266f
 # ╠═92f6133c-1e19-4b96-b43b-58bc67fbcfe8
 # ╠═822610e1-d90b-46d0-a78b-7661cb492299
 # ╠═d5318314-8569-4652-a2b7-20eca1c7c6cd
 # ╠═5808f5d3-8bbd-4df6-8502-0e40335922e4
+# ╟─edc61fc4-5123-439e-ab0d-29fc8cee5cf2
 # ╟─cd775016-1af0-494b-b8d6-abc98afd8cae
 # ╠═0cc2cd07-6de7-4c51-bbf3-a2a84911d0cc
 # ╠═2e5fc949-bab1-42ab-9543-0fb7342ec6c6
