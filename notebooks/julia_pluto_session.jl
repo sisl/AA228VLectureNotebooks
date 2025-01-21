@@ -40,6 +40,9 @@ using Distributions
 # ╔═╡ 3adc20d5-684a-42c4-a4f4-51a641b41cf2
 using ProgressLogging
 
+# ╔═╡ f834844a-33b7-4483-a73f-78ab43956d25
+using Parameters
+
 # ╔═╡ 0cc2cd07-6de7-4c51-bbf3-a2a84911d0cc
 using Random
 
@@ -831,6 +834,23 @@ car_one = VehicleState([0.0, 0.0], [1.0, 0.0], 0.0, 0.0)
 # ╔═╡ 6ed95d98-7d68-41a3-9b01-1fee030138cc
 car_one.heading # access type properties using dot notation
 
+# ╔═╡ f6771f21-2c0a-40f6-b047-5850e3b2d26e
+md"""
+In Python, you would achieve this using a _class_.
+
+```python
+class VehicleState:
+	def __init__(self, position, velocity, heading, timestamp):
+		self.position = position
+		self.velocity = velocity
+		self.heading = heading
+		self.timestamp = timestamp
+
+car_one = VehicleState([0.0, 0.0], [1.0, 0.0], 0.0, 0.0)
+car_one.heading
+```
+"""
+
 # ╔═╡ bda58dd0-074a-11eb-37e9-a918c670d380
 md"""
 Abstract types are just a name used as a point in the type hierarchy.
@@ -838,6 +858,20 @@ Abstract types are just a name used as a point in the type hierarchy.
 
 # ╔═╡ b45a403e-074a-11eb-1144-fd4d939b8bc8
 abstract type Cat end
+
+# ╔═╡ 1e3f98f4-8333-47c0-9936-76400633affd
+md"""
+In Python, this can be done using the _Abstract Base Class_ package.
+
+```python
+from abc import ABC
+
+class Cat(ABC):
+    pass
+```
+
+_Yuck._ 🤢
+"""
 
 # ╔═╡ ceb62530-074a-11eb-2d0f-7383bc2bb7ea
 subtypes(Number)
@@ -869,6 +903,18 @@ end
 # ╔═╡ 34216ec0-074b-11eb-0ec5-b933ea8ecf34
 subtypes(Cat)
 
+# ╔═╡ 9dde0a7b-bbca-4970-a1ea-db47bbdfa102
+md"""
+In Python, you can create `Lion` as a class that is a subclass of `Cat`:
+
+```python
+class Lion(Cat):
+	def __init__(self, mane_color, roar):
+		self.mane_color = mane_color
+		self.roar = roar
+```
+"""
+
 # ╔═╡ 573a1ce0-074b-11eb-2c5d-8ddb9d0c07ed
 md"""
 ## Multiple Dispatch
@@ -878,6 +924,28 @@ md"""
 function meow(animal::Lion)
 	return animal.roar 
 end
+
+# ╔═╡ c26ed0e7-1883-4f82-a13c-005def6e78cd
+lion = Lion("brown", "ROAAR")
+
+# ╔═╡ 3a2f2748-744b-4a96-beaa-3036a7df7765
+md"""
+In Python, instead of defining a global method `meow` that takes in a specific type (i.e., Julia's multiple dispatch), you must create the `meow` method as part of the `Lion` class.
+```python
+class Lion(Cat):
+	def __init__(self, mane_color, roar):
+		self.mane_color = mane_color
+		self.roar = roar
+
+	def meow(self):
+		return self.roar
+
+lion = Lion("brown", "ROAAR")
+lion.meow()
+```
+
+But what if you wanted to add a new method that can operate on `Lion` types?! You'd have to modify the `Lion` class directly...😱
+"""
 
 # ╔═╡ 5d31d2a2-074b-11eb-169a-a7423f75a9e6
 function meow(animal::Panther)
@@ -895,7 +963,7 @@ function meow(cat::Cat)
 end
 
 # ╔═╡ b2b1a3e2-074b-11eb-1a3d-3fb4f9c09ba9
-meow(Lion("brown", "ROAAR"))
+meow(lion)
 
 # ╔═╡ b7cc6720-074b-11eb-31e0-13dea28d37ec
 meow(Panther())
@@ -968,14 +1036,23 @@ md"""
 Probability distributions like `Uniform`, `Normal`, and `MvNormal`.
 """
 
+# ╔═╡ 44344661-eead-430a-8cd0-99001412fbdc
+U = Uniform(90, 95)
+
 # ╔═╡ 659e37a5-8cdc-4a75-b947-7e55f7b2252b
-rand(Uniform(90, 95))
+rand(U)
 
 # ╔═╡ d804e977-b6b3-4d82-b840-bbda518b5183
-rand(Normal(1, 0.1))
+N = Normal(1, 0.1)
+
+# ╔═╡ 42361e99-0cf5-4c2e-b4b9-313556b29941
+rand(N)
+
+# ╔═╡ 4b053619-2b4c-421d-bc9b-cd16e6203acc
+Mv = MvNormal([0, 0], [1 0; 0 1])
 
 # ╔═╡ 55d0aa5c-b864-4360-acea-5995647b8965
-rand(MvNormal([0, 0], [1 0; 0 1]))
+rand(Mv)
 
 # ╔═╡ 29415c3e-1353-4498-b940-07175b3e15d9
 md"""
@@ -1002,6 +1079,25 @@ A nice progress bar for `for` loops.
 @progress for i in 1:10
 	sleep(0.2)
 end
+
+# ╔═╡ c864791d-81fc-4666-87cd-542bc6beb06f
+md"""
+## `Parameters`
+Add default values to structs with `@with_kw`.
+"""
+
+# ╔═╡ 1756e1fc-df99-4696-9007-485c807a4b91
+@with_kw struct MyParams
+	α = 1e-3
+	β = 5e-10
+	δ = 0.1
+end
+
+# ╔═╡ 7c1cc3c2-1447-4d5d-a100-4b232b00ad32
+MyParams()
+
+# ╔═╡ 61c633dd-7572-4fea-918d-0f3ec5674822
+MyParams(δ=100)
 
 # ╔═╡ c0ecc29f-7760-457b-b290-e8fcb67c7875
 md"""
@@ -1543,6 +1639,7 @@ PLUTO_PROJECT_TOML_CONTENTS = """
 AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 ProgressLogging = "33c8b6b6-d38a-422a-b730-caa89a2f386c"
@@ -1554,6 +1651,7 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 [compat]
 AbstractTrees = "~0.4.5"
 Distributions = "~0.25.116"
+Parameters = "~0.12.3"
 PlutoUI = "~0.7.60"
 ProgressLogging = "~0.1.4"
 ReverseDiff = "~1.15.3"
@@ -1567,7 +1665,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.11.2"
 manifest_format = "2.0"
-project_hash = "2a5d1bdbda92e2991237049537ae0d916402da5d"
+project_hash = "c72bb9eea46ddf53ee32e4c95acff684a1988159"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -3618,18 +3716,23 @@ version = "1.4.1+2"
 # ╠═28c3d9f6-8666-44fa-b536-7c05149630eb
 # ╠═755f8671-9076-4f4f-bbbf-1bd214a2d0a9
 # ╠═6ed95d98-7d68-41a3-9b01-1fee030138cc
+# ╟─f6771f21-2c0a-40f6-b047-5850e3b2d26e
 # ╟─bda58dd0-074a-11eb-37e9-a918c670d380
 # ╠═b45a403e-074a-11eb-1144-fd4d939b8bc8
+# ╟─1e3f98f4-8333-47c0-9936-76400633affd
 # ╠═ceb62530-074a-11eb-2d0f-7383bc2bb7ea
 # ╠═d37ea9c0-074a-11eb-075b-ef2a3aa472d0
 # ╟─f447e9a0-074a-11eb-1a5b-738a852d47a0
 # ╠═2754b1f0-0914-11eb-1052-1159804bcc1c
 # ╠═0bb9a6f0-074b-11eb-0cd5-55f6817db5fd
 # ╠═34216ec0-074b-11eb-0ec5-b933ea8ecf34
+# ╟─9dde0a7b-bbca-4970-a1ea-db47bbdfa102
 # ╟─573a1ce0-074b-11eb-2c5d-8ddb9d0c07ed
 # ╠═3827f232-0914-11eb-3365-35e127a537ce
-# ╠═5d31d2a2-074b-11eb-169a-a7423f75a9e6
+# ╠═c26ed0e7-1883-4f82-a13c-005def6e78cd
 # ╠═b2b1a3e2-074b-11eb-1a3d-3fb4f9c09ba9
+# ╟─3a2f2748-744b-4a96-beaa-3036a7df7765
+# ╠═5d31d2a2-074b-11eb-169a-a7423f75a9e6
 # ╠═b7cc6720-074b-11eb-31e0-13dea28d37ec
 # ╟─e534d70a-af4d-4d4b-b844-a5e055af93f2
 # ╠═9ae8c099-0131-4022-bbc5-c10e78ea3e8d
@@ -3650,8 +3753,11 @@ version = "1.4.1+2"
 # ╠═b1c2f69a-3e12-40f5-a568-c84537809d64
 # ╟─f776a943-79e1-4b69-9501-c188d2435520
 # ╠═7fb98a12-b67b-4aad-8489-d062be92c946
+# ╠═44344661-eead-430a-8cd0-99001412fbdc
 # ╠═659e37a5-8cdc-4a75-b947-7e55f7b2252b
 # ╠═d804e977-b6b3-4d82-b840-bbda518b5183
+# ╠═42361e99-0cf5-4c2e-b4b9-313556b29941
+# ╠═4b053619-2b4c-421d-bc9b-cd16e6203acc
 # ╠═55d0aa5c-b864-4360-acea-5995647b8965
 # ╟─29415c3e-1353-4498-b940-07175b3e15d9
 # ╠═58dece25-d00a-4bf5-bbe1-2eb874e842d2
@@ -3659,6 +3765,11 @@ version = "1.4.1+2"
 # ╟─cfb8f437-e897-4688-90b7-c89aa3cf76d9
 # ╠═3adc20d5-684a-42c4-a4f4-51a641b41cf2
 # ╠═16735a49-1784-41ce-9653-856f0954ae9a
+# ╟─c864791d-81fc-4666-87cd-542bc6beb06f
+# ╠═f834844a-33b7-4483-a73f-78ab43956d25
+# ╠═1756e1fc-df99-4696-9007-485c807a4b91
+# ╠═7c1cc3c2-1447-4d5d-a100-4b232b00ad32
+# ╠═61c633dd-7572-4fea-918d-0f3ec5674822
 # ╟─c0ecc29f-7760-457b-b290-e8fcb67c7875
 # ╟─a1c0fbdd-3ced-4644-8f50-f3dba1e8ec10
 # ╟─d1d028eb-9872-4f04-8416-9fa0da0d01ff
