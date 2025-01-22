@@ -50,6 +50,9 @@ using Random
 md"""
 # Julia and Pluto
 AA228V/CS238V: *Validation of Safety-Critical Systems*
+
+[![html](https://img.shields.io/badge/static%20html-Julia%20Pluto-0072B2)](https://sisl.github.io/AA228VLectureNotebooks/media/html/julia_pluto_session.html)
+
 """
 
 # ╔═╡ b3cd799e-17fe-4c80-80e1-107c6e64cc31
@@ -260,14 +263,25 @@ md"""
 `$` can be using for "string interpolation".
 """
 
-# ╔═╡ 993a33e0-073d-11eb-2ded-4fc896fd19d7
-"2 + 2 = $(2+2)"
-
 # ╔═╡ e95927ed-cfc5-428d-87e1-addc0983d47b
 day_of_week = "Wednesday"
 
 # ╔═╡ 4982024e-9e0e-4968-a521-18256e5ead5a
 "The current day of the week is $day_of_week"
+
+# ╔═╡ 993a33e0-073d-11eb-2ded-4fc896fd19d7
+"2 + 2 = $(2+2)"
+
+# ╔═╡ 7022b6d0-1a78-4b30-9eb4-42fb680796a4
+md"""
+#### Expressions
+"""
+
+# ╔═╡ 71cb3a8f-3f0c-4ea2-a1e7-6a91e4746953
+ex = :(2 + 2) # Expr
+
+# ╔═╡ 911e0b72-f306-4fa0-a4df-cee060ba1836
+"$ex = $(eval(ex))"
 
 # ╔═╡ f99743b0-0745-11eb-049e-71c7b72884d1
 md"""
@@ -319,6 +333,33 @@ You can also use `printf` statements with the `Printf` package
 # ╔═╡ b1ed3fa0-b885-48be-9332-653623d4b606
 @printf("%.2f is less than %.2f", 4.5, 5.3)
 
+# ╔═╡ fd7a3bdd-0d20-4aab-9beb-6179b927887f
+md"""
+### Printing in loops
+"""
+
+# ╔═╡ fbe5a37a-fa25-4780-bdda-cb5c1b17efe9
+md"""
+Pluto will only show the `print` or `println` output after the cell is finished running completely.
+"""
+
+# ╔═╡ 808a7f38-c5ee-472f-853a-c5a2a56e1e7a
+for i in 1:3
+	println("$i: using println")
+	sleep(1)
+end
+
+# ╔═╡ a8dd216a-7122-43f6-973a-8a70760be579
+md"""
+But you can use the `@info` macro to get instant feedback within running code!
+"""
+
+# ╔═╡ 35c32898-a967-40d0-933e-20f427c95a76
+for i in 1:3
+	@info "$i: using @info"
+	sleep(1)
+end
+
 # ╔═╡ 62c9ce6e-0746-11eb-0911-afc23d8b351c
 md"""
 ## Variables
@@ -333,7 +374,7 @@ Variable names start with a letter, but after that you can use letters, digits, 
 """
 
 # ╔═╡ 71dc24d0-0746-11eb-1eac-adcbb393c38b
-xMarksTheSpot_2Dig! = 1
+xMarksTheSpot_2Dig = 1
 
 # ╔═╡ 765e5190-0746-11eb-318e-8954e5e8fa3e
 md"""
@@ -342,6 +383,12 @@ It is Julian to use lowercase with underscores for variable names.
 
 # ╔═╡ 81956990-0746-11eb-2ca4-63ba1d192b97
 x_marks_the_spot_to_dig = 1
+
+# ╔═╡ 90e8e19f-bcc5-4c9a-8db5-d4b3deaa306c
+τ = "Unicode characters work" # \tau<TAB>
+
+# ╔═╡ 37a0695e-9e8a-4716-8ddd-9b81b34fea40
+🤖 = "yes, emojis work too" # \:robot_face:<TAB>
 
 # ╔═╡ 85101160-0746-11eb-1501-3101c2006157
 md"""
@@ -395,6 +442,13 @@ A[2:end-1]
 
 # ╔═╡ da28e370-0746-11eb-1ea1-91664661a74d
 push!(A, round(Int64, 1.3))
+
+# ╔═╡ dbabaeae-28a4-4c9a-b946-fa635d5b1f37
+md"""
+In Julia, the `!` at the end of a function simply indicates to the user that that function will mutate the state of one (or many) of its inputs, e.g., `push!(A, 1)` will mutate the array `A`.
+
+It's just a convention and doesn't actually do anything under the hood.
+"""
 
 # ╔═╡ df66e620-0746-11eb-37b9-d3f3ab3dd12f
 in(4, A)
@@ -455,18 +509,6 @@ b
 # ╔═╡ 49c63ba0-0748-11eb-158d-57dcd4ad537d
 c
 
-# ╔═╡ 4a742ee0-0748-11eb-364c-f7eb2b89d88a
-j, k, l = 1, 2, 3
-
-# ╔═╡ 64a33770-0748-11eb-1221-b994ffb70091
-j
-
-# ╔═╡ 668d060e-0748-11eb-0f34-f307c94e755d
-k
-
-# ╔═╡ 6722dd70-0748-11eb-31b7-d38b56f4cc0f
-l
-
 # ╔═╡ 7226fe92-0748-11eb-215e-49075766b2da
 md"""
 To create a single-element tuple, you must add the "," at the end
@@ -495,6 +537,11 @@ d["one"]
 
 # ╔═╡ a6f27780-0748-11eb-2ca3-69c3f2923f7e
 keys(d)
+
+# ╔═╡ 6650a54b-5f3d-4d43-b68f-65d4403e6af2
+md"""
+Notice that the key ordering is not guaranteed to be the order you defined it with.
+"""
 
 # ╔═╡ a8c3b510-0748-11eb-39b2-7389d0ee67e4
 collect(keys(d))
@@ -598,10 +645,10 @@ md"""
 
 # ╔═╡ 69c88c90-0749-11eb-1c23-a5f0042bf2de
 begin
-	s = 0
-	while s < 4
-		println(s)
-		s += 1 # shorthand for s = s + 1
+	count = 0
+	while count < 4
+		println(count)
+		count += 1 # shorthand for s = s + 1
 	end
 end
 
@@ -621,7 +668,7 @@ try
 	println("We do not make it here after the error.")
 catch err
 	println("Caught the error! $err")
-	println("We do continue in this block after catching an error")
+	println("We continue in this block after catching an error")
 end
 
 # ╔═╡ 9ef92ff2-0749-11eb-119e-35edd2a409c4
@@ -631,7 +678,17 @@ md"""
 
 # ╔═╡ c3ac5430-0749-11eb-13f0-cde5ec9409cb
 md"""
-Functions return the value of their last statement (or where you specify `return`)
+It is Julian to name functions using "snake case" (lowercase with underscores). But sometimes, you can omit underscores if it's just two words and it looks nice.
+"""
+
+# ╔═╡ a4e9e0b2-b3d7-47fd-86c1-f07128671f5b
+joinpath("Users", "mossr", "Code")
+
+# ╔═╡ 043ca591-4296-4252-b6d4-b3ed36cb4222
+md"""
+Functions return the value of their last statement (or where you specify `return`).
+
+But we usually prefer to specify the `return` keyword for clarity.
 """
 
 # ╔═╡ a12781a0-0749-11eb-0019-3154576cfbc5
@@ -652,7 +709,7 @@ add(5, 6)
 
 # ╔═╡ d6c45450-0749-11eb-3a9c-41cbc41c8d08
 md"""
-You can define functions with optional positional arguments.
+You can define functions with optional **positional** arguments.
 """
 
 # ╔═╡ dedb4090-0749-11eb-38f4-7dffd22ae8c5
@@ -671,22 +728,43 @@ defaults('h', 'g', 'j', 'k')
 
 # ╔═╡ f81b0720-0749-11eb-2217-9dd2714570b3
 md"""
-You can define functions that take keyword arguments using `;` to separate the variables.
+You can define functions that take **keyword arguments** using `;` to separate the variables.
 """
 
 # ╔═╡ 06186b12-074a-11eb-2ff8-d7ecf3b88f3b
-function keyword_args(; k1=4, name2="hello")
-	return Dict("k1"=>k1, name2=>name2)
+function keyword_args(c; k="my key", v=2)
+	return Dict(k=>v*c)
 end
 
 # ╔═╡ 1ae6cdc0-074a-11eb-2415-710522e2ff61
-keyword_args(name2="ness")
+keyword_args(2, v=10)
 
 # ╔═╡ 1f2031b0-074a-11eb-2f30-43fa1403837e
-keyword_args(k1="mine")
+keyword_args(2, k="different key name")
 
 # ╔═╡ 2547f820-074a-11eb-2aa5-ffe306f6b1e2
-keyword_args()
+keyword_args(2)
+
+# ╔═╡ 0bcd0a23-4740-4018-a4c8-990b3cfc1606
+md"""
+You can also clarify the keyword arguments using `;` in the function call.
+"""
+
+# ╔═╡ 7c256cb2-e0ac-4676-83e9-63da31500f96
+keyword_args(2; k="different key name")
+
+# ╔═╡ 3a49792f-6cd0-4989-abbd-97853a29000e
+md"""
+If the variable name you're passing into a keyword has the **same exact name** as a keyword argument, you can put it to the right of the `;` without using the equal sign.
+
+_You must use the `;` in the function call for this to work._
+"""
+
+# ╔═╡ a0640744-0ffc-42da-9a54-c2e23eb147f4
+k = "how cool"
+
+# ╔═╡ 5a30c3d4-022f-4da4-aebf-601d493665a3
+keyword_args(2; k)
 
 # ╔═╡ 318a3e2c-d71e-4527-9a97-60bf6fb0a7de
 md"""
@@ -1024,6 +1102,23 @@ md"""
 Shorthand for `w' * x` or `transpose(w) * x`.
 """
 
+# ╔═╡ ef8beb5d-62e0-4b4b-a19d-191795076ad3
+md"""
+The variable `I` from `LinearAlgebra` represents an identity matrix of any size. 
+"""
+
+# ╔═╡ 70567235-c992-4f7f-987f-4a6843402eb5
+C = [1 1;
+     1 1]
+
+# ╔═╡ da33f56a-7d7c-4771-8ddc-95daa8381b8b
+C + I
+
+# ╔═╡ ea7769ef-2df7-43ba-a9a2-75aecc24b109
+md"""
+I didn't have to explicity set the size of `I`, it was inferred!
+"""
+
 # ╔═╡ 49dcf1dd-536b-446b-9673-5f92dcd7a96c
 md"""
 ## `Statistics`
@@ -1187,9 +1282,10 @@ After editing a cell, you can run it several ways:
     - This will _not_ rerun the current cell if has already been run (indicated by the cell color)
 1. To run all cells with unsaved changes: `⌃+S` or `⌘+S`
     - See in the top right of the notebook when this option is available.
+1. Pressing backspace in an empty cell will delete it.
 """
 
-# ╔═╡ 7d42e44e-7a4f-4325-aec8-ecda3bd2a751
+# ╔═╡ 8d929c12-4c2a-4b12-8884-b2d6e0a2da30
 
 
 # ╔═╡ bee6191c-d553-44e6-952b-ed1744d735a0
@@ -1254,11 +1350,55 @@ begin
 	sqrt(12345); # This won't suppress it
 end
 
+# ╔═╡ 122eeee7-e671-4e2b-9f90-ac80ee0eeb8b
+md"""
+## Pluto `.jl` files
+Pluto notebook files are just runnable Julia code files with the `.jl` extension (unline Jupyter, which uses a large JSON file format).
+- Open this file (`julia_pluto_session.jl`) in your text editor of choice.
+"""
+
 # ╔═╡ a7aa0880-d88a-42d8-9cf9-892210486aef
 md"""
 # More Advanced Julia
 We'll show off some more advanced Julia syntax that we use in the textbook and projects.
 """
+
+# ╔═╡ 069a3af8-62b2-4045-a5f8-298aafefeeac
+md"""
+## `Nothing` and `Missing` types
+
+There are global constants `nothing` (which is of type `Nothing`) and `missing` (which is of type `Missing`) that you can use to represent "no data", "missing data", "nothing in particular", etc.
+
+By default, Julia will return the last expression results in a function if no explicit `return` is set. For an empty function, this returns `nothing`.
+"""
+
+# ╔═╡ b3b4218e-7180-4ff7-a2d0-716a14014da8
+nothing # evaluating `nothing` in a cell also does not show any output
+
+# ╔═╡ 2608c635-fc24-42fe-9819-582c76f1986c
+missing
+
+# ╔═╡ 8ad3c469-d818-4b6f-a64a-29faef5d4942
+function nothing_test()
+	# Nothing to see here
+end
+
+# ╔═╡ 83bc2bac-5a5a-4653-87b5-690d96098dda
+nothing_test()
+
+# ╔═╡ 5855432f-27c8-4e25-a3e6-bde278318ffd
+typeof(nothing_test())
+
+# ╔═╡ 672efca0-9e68-4833-9f68-ee4e8617cd11
+md"""
+As a side note, you can use the piping operator `|>` to pass the result from one expression to the next and so on.
+"""
+
+# ╔═╡ 9b2cad92-1a08-447d-816a-b3625e90709d
+nothing_test() |> typeof
+
+# ╔═╡ 22e054fe-ab72-4620-aa74-debe2adb6ba4
+nothing_test() |> typeof |> supertype
 
 # ╔═╡ 89b956a9-05ec-4120-9469-468270315881
 md"""
@@ -1279,9 +1419,6 @@ end
 # ╔═╡ 0f13d11c-b580-47cd-8356-93fead9e9f2f
 mt = MyType(41)
 
-# ╔═╡ d84184b9-b9bb-4552-9471-f22931242aa5
-depth(mt)
-
 # ╔═╡ d4243a61-d0a0-4f07-8a02-abcbda51a5d8
 md"""
 If you don't do this, Julia will completely override the `depth` methods with your new method and this will cause some confusing errors (note, we catch this for you in the project notebooks and give you a helpful error in that case).
@@ -1289,9 +1426,6 @@ If you don't do this, Julia will completely override the `depth` methods with yo
 
 # ╔═╡ 448a2014-33ab-4043-aa5c-aa1a6a763299
 P = NominalTrajectoryDistribution(Normal(), missing, 10)
-
-# ╔═╡ e56132c3-cd06-4f3c-9e18-31b30b39163c
-depth(P)
 
 # ╔═╡ f6c78515-7efe-429f-94df-9413f6974410
 md"""
@@ -1607,9 +1741,152 @@ Most of the unicode characters follow $\LaTeX$ names, such as `\square` for `□
 See the Julia docs for more examples: [https://docs.julialang.org/en/v1/manual/unicode-input/](https://docs.julialang.org/en/v1/manual/unicode-input/)
 """
 
-# ╔═╡ f191673f-236f-44a0-a7d6-e47264c4b6c1
+# ╔═╡ 75f1a5d3-0472-4e31-9d74-fe44725b6a3e
 md"""
----
+# Put it all together
+
+Let's use a bunch of the things we learned to define a fuzzing distribution for the inverted penduluum system (used in the programming projects).
+"""
+
+# ╔═╡ 1e5c89ac-9cbf-4c2c-9422-4f4e1954eff3
+md"""
+## Pendulum `System`
+"""
+
+# ╔═╡ f736d079-49dc-4ae8-ae6e-a38318c829b8
+sys = System(
+	ProportionalController([-15.0, -8.0]),
+	InvertedPendulum(),
+	AdditiveNoiseSensor(MvNormal(zeros(2), 0.1^2*I))
+)
+
+# ╔═╡ aadacd3d-c586-4fdc-838d-14303260c4ec
+md"""
+## Fuzzing: Inverted pendulum
+"""
+
+# ╔═╡ 30fd8647-39ba-4af0-8778-a398cb28a04d
+struct PendulumFuzzingDist <: TrajectoryDistribution
+	Σₒ # sensor disturbance covariance
+	d  # depth
+end
+
+# ╔═╡ 37c94367-5464-4487-be0d-f42a4d81f665
+function StanfordAA228V.initial_state_distribution(p::PendulumFuzzingDist)
+	# Same `Ps` as the NominalTrajectoryDistribution for the pendulum case
+	return Ps(sys.env)
+end
+
+# ╔═╡ f8ec5db8-26fd-4a26-94a8-216da7d5f785
+function StanfordAA228V.disturbance_distribution(p::PendulumFuzzingDist, t=nothing)
+	return DisturbanceDistribution(
+			(o)->Deterministic(),         # agent is deterministic
+			(s,a)->Deterministic(),       # environment is deterministic
+			(s)->MvNormal(zeros(2), p.Σₒ) # fuzzing dist for observation noise
+	)
+end
+
+# ╔═╡ 21593530-cdf5-40c4-938c-7d5b52ccbf16
+StanfordAA228V.depth(p::PendulumFuzzingDist) = p.d
+
+# ╔═╡ d84184b9-b9bb-4552-9471-f22931242aa5
+depth(mt)
+
+# ╔═╡ e56132c3-cd06-4f3c-9e18-31b30b39163c
+depth(P)
+
+# ╔═╡ e949897f-effd-48a4-9220-e4891ba3324c
+md"""
+Now lets create a fuzzing distribution.
+"""
+
+# ╔═╡ 3282bfcf-0be0-45e9-89d4-4b2511d3357c
+fuzz = PendulumFuzzingDist(0.2^2*I, 41)
+
+# ╔═╡ bad012c8-8f06-4fdb-91bc-a64fcf4c0dff
+disturbance_distribution(fuzz)
+
+# ╔═╡ f19cc64b-9cab-4617-9e08-37d0502b51ec
+disturbance_distribution(fuzz).Do
+
+# ╔═╡ 1d3243c1-c108-4755-a488-9ca9639b10b3
+s = [0, 0]
+
+# ╔═╡ 67544469-96bc-4128-8f9c-c58301358da4
+disturbance_distribution(fuzz).Do(s)
+
+# ╔═╡ e34d153e-b831-4f36-b1d6-42fe4e64c5e3
+rand(disturbance_distribution(fuzz).Do(s))
+
+# ╔═╡ 0db231fd-3a0d-499c-b8c5-3eb2320d6ae3
+md"""
+The `Deterministic` type—which we defined in the textbook/the `StanfordAA228V` package—is a `Distribution` object that you can "sample" (yet, it will deterministically return the single value `val` you enter, defaulting to `0`).
+"""
+
+# ╔═╡ 9843b754-47e1-46fe-a46c-008f5d3e8693
+Deterministic |> supertype
+
+# ╔═╡ f74477af-db71-40fc-9a41-a9d6f0547e88
+det = Deterministic(0.12345)
+
+# ╔═╡ 5663d206-acdc-478a-9eaf-0345b9722571
+rand(det)
+
+# ╔═╡ 6cb9c4b3-7e69-4297-b304-dd6cfa49b6a1
+det2 = Deterministic()
+
+# ╔═╡ 6e428a50-b2af-45d8-a3ae-897cad39ee29
+rand(det2)
+
+# ╔═╡ 244d726d-e2d0-4077-81c6-a51869458275
+md"""
+We use the default `Deterministic` type in the textbook to represent the case of "no disturbance noise" (i.e., noise of `0`).
+"""
+
+# ╔═╡ d3461319-2a19-412d-a88f-95aeb8a38cf2
+o = [0, 0]
+
+# ╔═╡ 39161187-1230-41d7-b5ec-ca6dd660186e
+disturbance_distribution(fuzz).Da(o)
+
+# ╔═╡ 9fc742dc-e9b4-4077-844e-6fa7b07a58fe
+rand(disturbance_distribution(fuzz).Da(o))
+
+# ╔═╡ 1c53f117-3e63-43b0-a5dd-6fc04da19546
+md"""
+### Samples from nominal and the fuzzing distributions
+"""
+
+# ╔═╡ 71c452bd-bcaa-46a8-b899-d42b65f19d2c
+nominal = NominalTrajectoryDistribution(sys, 41)
+
+# ╔═╡ a78ec7a8-a7a6-44bb-8e8e-6d5a05a2944d
+n = 10_000_000
+
+# ╔═╡ 0c20e42c-e2df-48c1-b525-28d9a91469da
+samples_nominal = rand(disturbance_distribution(nominal, nothing).Do(s), n)
+
+# ╔═╡ 5a717e37-4161-46e8-8b2a-be24bd88accb
+samples_fuzzing = rand(disturbance_distribution(fuzz, nothing).Do(s), n)
+
+# ╔═╡ 16a37eb7-71f3-4d8f-ab23-d4d39e8a681d
+var(samples_nominal, dims=2)
+
+# ╔═╡ f61626a1-e934-48b0-b994-336fd489070c
+disturbance_distribution(nominal, nothing).Do(s).Σ
+
+# ╔═╡ c378b312-813b-4cee-9f24-9d81766fa305
+var(samples_fuzzing, dims=2)
+
+# ╔═╡ 0bb7363f-7af4-46d3-be11-eb06e8c5098d
+disturbance_distribution(fuzz, nothing).Do(s).Σ
+
+# ╔═╡ 97f5fb4e-9110-4bce-997e-8dfd220b728e
+md"""
+# Further questions?
+Please refer back to this [notebook](https://sisl.github.io/AA228VLectureNotebooks/media/html/julia_pluto_session.html) or ask [questions on Ed](https://edstem.org/us/courses/69226/discussion/6010031)!
+
+[![edstem](https://its.ucsc.edu/eddiscussion/ed-discussion.png)](https://edstem.org/us/courses/69226/discussion/6010031)
 """
 
 # ╔═╡ ed3b1a88-930f-4b3f-aadf-a29da0c7d953
@@ -3582,9 +3859,12 @@ version = "1.4.1+2"
 # ╠═7a9cd4ae-073d-11eb-1c20-f1a0bc572b33
 # ╠═db37f460-0744-11eb-24b0-cb3767f0cf44
 # ╟─8ea1a5d0-073d-11eb-029b-01b0401da847
-# ╠═993a33e0-073d-11eb-2ded-4fc896fd19d7
 # ╠═e95927ed-cfc5-428d-87e1-addc0983d47b
 # ╠═4982024e-9e0e-4968-a521-18256e5ead5a
+# ╠═993a33e0-073d-11eb-2ded-4fc896fd19d7
+# ╟─7022b6d0-1a78-4b30-9eb4-42fb680796a4
+# ╠═71cb3a8f-3f0c-4ea2-a1e7-6a91e4746953
+# ╠═911e0b72-f306-4fa0-a4df-cee060ba1836
 # ╟─f99743b0-0745-11eb-049e-71c7b72884d1
 # ╟─fbaad713-216b-4557-8132-3a1e95ed0a27
 # ╠═4a2f40a4-029f-43bb-9f55-3bf001861d0c
@@ -3596,12 +3876,19 @@ version = "1.4.1+2"
 # ╟─c5c2e4a7-6a4f-4d06-9cc5-0011dafbffe3
 # ╠═d50862fe-4e9d-4dd8-9278-1f935ace223b
 # ╠═b1ed3fa0-b885-48be-9332-653623d4b606
+# ╟─fd7a3bdd-0d20-4aab-9beb-6179b927887f
+# ╟─fbe5a37a-fa25-4780-bdda-cb5c1b17efe9
+# ╠═808a7f38-c5ee-472f-853a-c5a2a56e1e7a
+# ╟─a8dd216a-7122-43f6-973a-8a70760be579
+# ╠═35c32898-a967-40d0-933e-20f427c95a76
 # ╟─62c9ce6e-0746-11eb-0911-afc23d8b351c
 # ╠═64f36530-0746-11eb-3c66-59091a9c7d7d
 # ╟─66335f40-0746-11eb-2f7e-ffe20c76f21f
 # ╠═71dc24d0-0746-11eb-1eac-adcbb393c38b
 # ╟─765e5190-0746-11eb-318e-8954e5e8fa3e
 # ╠═81956990-0746-11eb-2ca4-63ba1d192b97
+# ╠═90e8e19f-bcc5-4c9a-8db5-d4b3deaa306c
+# ╠═37a0695e-9e8a-4716-8ddd-9b81b34fea40
 # ╟─85101160-0746-11eb-1501-3101c2006157
 # ╠═97a54cf0-0746-11eb-391d-d70312796ded
 # ╠═9a808070-0746-11eb-05cf-81547eab646d
@@ -3619,6 +3906,7 @@ version = "1.4.1+2"
 # ╠═cd941030-0746-11eb-34d7-216aa0f8f33d
 # ╠═d6663620-0746-11eb-01dc-27b5e3b11ab8
 # ╠═da28e370-0746-11eb-1ea1-91664661a74d
+# ╟─dbabaeae-28a4-4c9a-b946-fa635d5b1f37
 # ╠═df66e620-0746-11eb-37b9-d3f3ab3dd12f
 # ╠═e3e171c0-0746-11eb-0e1d-c3fc24347d47
 # ╟─e99fa0f0-0746-11eb-1f5c-7da5d6765131
@@ -3636,10 +3924,6 @@ version = "1.4.1+2"
 # ╠═3589dfc0-0748-11eb-1b7f-672e2f6dcf53
 # ╠═48a9a810-0748-11eb-0b15-e9085ebd7b52
 # ╠═49c63ba0-0748-11eb-158d-57dcd4ad537d
-# ╠═4a742ee0-0748-11eb-364c-f7eb2b89d88a
-# ╠═64a33770-0748-11eb-1221-b994ffb70091
-# ╠═668d060e-0748-11eb-0f34-f307c94e755d
-# ╠═6722dd70-0748-11eb-31b7-d38b56f4cc0f
 # ╟─7226fe92-0748-11eb-215e-49075766b2da
 # ╠═5bfd2a90-0748-11eb-3b5c-8f191bd23f1c
 # ╠═7f8e8b20-0748-11eb-39da-435f6c49934a
@@ -3648,6 +3932,7 @@ version = "1.4.1+2"
 # ╠═90afc450-0748-11eb-170e-9fd33246ec06
 # ╠═a28f9290-0748-11eb-0e3a-539a124905c0
 # ╠═a6f27780-0748-11eb-2ca3-69c3f2923f7e
+# ╟─6650a54b-5f3d-4d43-b68f-65d4403e6af2
 # ╠═a8c3b510-0748-11eb-39b2-7389d0ee67e4
 # ╠═ac35d160-0748-11eb-00c4-e799f1c83746
 # ╠═b137dc80-0748-11eb-3e3b-d9eb6ade524c
@@ -3673,6 +3958,8 @@ version = "1.4.1+2"
 # ╠═870a7a70-0749-11eb-2ab1-e9279dd4642a
 # ╟─9ef92ff2-0749-11eb-119e-35edd2a409c4
 # ╟─c3ac5430-0749-11eb-13f0-cde5ec9409cb
+# ╠═a4e9e0b2-b3d7-47fd-86c1-f07128671f5b
+# ╟─043ca591-4296-4252-b6d4-b3ed36cb4222
 # ╠═a12781a0-0749-11eb-0019-3154576cfbc5
 # ╟─514268b6-e65c-4ba7-b009-c0398e31c890
 # ╠═ba349f70-0749-11eb-3a4a-294a8c484463
@@ -3686,6 +3973,11 @@ version = "1.4.1+2"
 # ╠═1ae6cdc0-074a-11eb-2415-710522e2ff61
 # ╠═1f2031b0-074a-11eb-2f30-43fa1403837e
 # ╠═2547f820-074a-11eb-2aa5-ffe306f6b1e2
+# ╟─0bcd0a23-4740-4018-a4c8-990b3cfc1606
+# ╠═7c256cb2-e0ac-4676-83e9-63da31500f96
+# ╟─3a49792f-6cd0-4989-abbd-97853a29000e
+# ╠═a0640744-0ffc-42da-9a54-c2e23eb147f4
+# ╠═5a30c3d4-022f-4da4-aebf-601d493665a3
 # ╟─318a3e2c-d71e-4527-9a97-60bf6fb0a7de
 # ╟─28c44da0-074a-11eb-07cf-21435e264c3b
 # ╠═39c7ecb0-074a-11eb-0f6a-59d57a454722
@@ -3749,6 +4041,10 @@ version = "1.4.1+2"
 # ╠═5512d8cd-d9e8-48eb-b720-f6399b226dd6
 # ╠═8fa3ecd9-a81a-4789-9ce7-8f2602807643
 # ╟─cd91a50f-bca9-40ca-a2f4-2e3186d38aee
+# ╟─ef8beb5d-62e0-4b4b-a19d-191795076ad3
+# ╠═70567235-c992-4f7f-987f-4a6843402eb5
+# ╠═da33f56a-7d7c-4771-8ddc-95daa8381b8b
+# ╟─ea7769ef-2df7-43ba-a9a2-75aecc24b109
 # ╟─49dcf1dd-536b-446b-9673-5f92dcd7a96c
 # ╠═b1c2f69a-3e12-40f5-a568-c84537809d64
 # ╟─f776a943-79e1-4b69-9501-c188d2435520
@@ -3786,7 +4082,7 @@ version = "1.4.1+2"
 # ╟─0d994f6e-f874-4d7b-8335-a2e09184aadd
 # ╟─fa03914b-1603-455c-a437-d17eda6fcee2
 # ╟─c9a1900c-3a99-47e7-ad2e-9eb98504a3c9
-# ╠═7d42e44e-7a4f-4325-aec8-ecda3bd2a751
+# ╠═8d929c12-4c2a-4b12-8884-b2d6e0a2da30
 # ╟─bee6191c-d553-44e6-952b-ed1744d735a0
 # ╟─89d08f17-9fc0-4665-a500-ac5967deedc5
 # ╠═1a4a6777-c031-40bb-a01a-0e59226f22b3
@@ -3798,7 +4094,17 @@ version = "1.4.1+2"
 # ╟─0cebdf5d-e2e3-4131-a623-79581b22898f
 # ╠═add31696-8a6d-4808-8ac8-91429768cab0
 # ╠═34629b2d-defe-4bd1-8d29-ab59c4f7299b
+# ╟─122eeee7-e671-4e2b-9f90-ac80ee0eeb8b
 # ╟─a7aa0880-d88a-42d8-9cf9-892210486aef
+# ╟─069a3af8-62b2-4045-a5f8-298aafefeeac
+# ╠═b3b4218e-7180-4ff7-a2d0-716a14014da8
+# ╠═2608c635-fc24-42fe-9819-582c76f1986c
+# ╠═8ad3c469-d818-4b6f-a64a-29faef5d4942
+# ╠═83bc2bac-5a5a-4653-87b5-690d96098dda
+# ╠═5855432f-27c8-4e25-a3e6-bde278318ffd
+# ╟─672efca0-9e68-4833-9f68-ee4e8617cd11
+# ╠═9b2cad92-1a08-447d-816a-b3625e90709d
+# ╠═22e054fe-ab72-4620-aa74-debe2adb6ba4
 # ╟─89b956a9-05ec-4120-9469-468270315881
 # ╠═29a7d282-7235-447f-bd6d-3f5b6f4df57c
 # ╠═edeaff05-3f37-41f2-b10e-7530c0bbb301
@@ -3856,7 +4162,41 @@ version = "1.4.1+2"
 # ╟─87682e53-7286-4a17-9ee4-2f725cd508a0
 # ╠═cb3646a1-4d12-4087-8fad-18e44c357623
 # ╟─3637fed7-5acc-49ad-8ec0-b7b48ea91d55
-# ╟─f191673f-236f-44a0-a7d6-e47264c4b6c1
+# ╟─75f1a5d3-0472-4e31-9d74-fe44725b6a3e
+# ╟─1e5c89ac-9cbf-4c2c-9422-4f4e1954eff3
+# ╠═f736d079-49dc-4ae8-ae6e-a38318c829b8
+# ╟─aadacd3d-c586-4fdc-838d-14303260c4ec
+# ╠═30fd8647-39ba-4af0-8778-a398cb28a04d
+# ╠═37c94367-5464-4487-be0d-f42a4d81f665
+# ╠═f8ec5db8-26fd-4a26-94a8-216da7d5f785
+# ╠═21593530-cdf5-40c4-938c-7d5b52ccbf16
+# ╟─e949897f-effd-48a4-9220-e4891ba3324c
+# ╠═3282bfcf-0be0-45e9-89d4-4b2511d3357c
+# ╠═bad012c8-8f06-4fdb-91bc-a64fcf4c0dff
+# ╠═f19cc64b-9cab-4617-9e08-37d0502b51ec
+# ╠═1d3243c1-c108-4755-a488-9ca9639b10b3
+# ╠═67544469-96bc-4128-8f9c-c58301358da4
+# ╠═e34d153e-b831-4f36-b1d6-42fe4e64c5e3
+# ╟─0db231fd-3a0d-499c-b8c5-3eb2320d6ae3
+# ╠═9843b754-47e1-46fe-a46c-008f5d3e8693
+# ╠═f74477af-db71-40fc-9a41-a9d6f0547e88
+# ╠═5663d206-acdc-478a-9eaf-0345b9722571
+# ╠═6cb9c4b3-7e69-4297-b304-dd6cfa49b6a1
+# ╠═6e428a50-b2af-45d8-a3ae-897cad39ee29
+# ╟─244d726d-e2d0-4077-81c6-a51869458275
+# ╠═d3461319-2a19-412d-a88f-95aeb8a38cf2
+# ╠═39161187-1230-41d7-b5ec-ca6dd660186e
+# ╠═9fc742dc-e9b4-4077-844e-6fa7b07a58fe
+# ╟─1c53f117-3e63-43b0-a5dd-6fc04da19546
+# ╠═71c452bd-bcaa-46a8-b899-d42b65f19d2c
+# ╠═a78ec7a8-a7a6-44bb-8e8e-6d5a05a2944d
+# ╠═0c20e42c-e2df-48c1-b525-28d9a91469da
+# ╠═5a717e37-4161-46e8-8b2a-be24bd88accb
+# ╠═16a37eb7-71f3-4d8f-ab23-d4d39e8a681d
+# ╠═f61626a1-e934-48b0-b994-336fd489070c
+# ╠═c378b312-813b-4cee-9f24-9d81766fa305
+# ╠═0bb7363f-7af4-46d3-be11-eb06e8c5098d
+# ╟─97f5fb4e-9110-4bce-997e-8dfd220b728e
 # ╟─ed3b1a88-930f-4b3f-aadf-a29da0c7d953
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
