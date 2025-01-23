@@ -99,6 +99,9 @@ md"""
 # ╔═╡ 433a69f0-074d-11eb-0698-f9113d9939c3
 @bind y Slider(1:10, default=5, show_value=true)
 
+# ╔═╡ 67ed81e1-4250-4fc4-96ac-b30d8650d0a5
+y
+
 # ╔═╡ 4a4f2872-074d-11eb-0ec8-13783b11ffd7
 10y
 
@@ -139,6 +142,9 @@ These are different types of numbers.
 # ╔═╡ 5996f670-073c-11eb-3a63-67246e676f4e
 typeof("hello world")
 
+# ╔═╡ a22efc4d-8e8e-47dc-b163-2e4be63e73a8
+typeof('a')
+
 # ╔═╡ 5fe5f3f0-073c-11eb-33ae-2343a63d952d
 typeof(1)
 
@@ -160,6 +166,9 @@ supertype(Number)
 # ╔═╡ 9be413a0-073c-11eb-3c73-df78ea75bcd1
 supertype(Int64)
 
+# ╔═╡ 6882a092-7d19-4934-af51-4a3f68854a7d
+supertype(UInt64)
+
 # ╔═╡ a10c4462-073c-11eb-31f8-6f675614356d
 supertype(Signed)
 
@@ -176,6 +185,9 @@ md"""
 
 # ╔═╡ 92fb38fc-c10d-4a66-9bfe-dfa73f3a7996
 AbstractTrees.children(x::Type) = subtypes(x)
+
+# ╔═╡ fe5cca11-d625-44f8-88a9-31763026fed5
+print_tree(Real)
 
 # ╔═╡ 9141fbe7-5250-4aff-8754-49a5c9e1884e
 print_tree(Environment) # from StanfordAA228V
@@ -210,8 +222,17 @@ Comparisons can be chains. This is equivalent to `1 < 2 && 2 < 3`
 # ╔═╡ e05151b0-073c-11eb-2cd2-75f9f350b266
 1 < 2 < 3
 
+# ╔═╡ d4aae5af-7af2-4a3a-a32e-f3a4b80f8651
+1 < 2 && 2 < 3
+
 # ╔═╡ 69601831-6265-4341-beed-4c01a54ed705
 1 ≤ 3 ≤ 3 # \le
+
+# ╔═╡ b2571f19-2ffc-4850-8e67-f9fbacd69a9c
+≤
+
+# ╔═╡ 326bbd3c-d107-4b6e-a35e-14ee93febc0e
+<=
 
 # ╔═╡ e90af052-709d-4587-9982-f224afd49af2
 md"""
@@ -280,6 +301,9 @@ md"""
 # ╔═╡ 71cb3a8f-3f0c-4ea2-a1e7-6a91e4746953
 ex = :(2 + 2) # Expr
 
+# ╔═╡ faa326ba-0a7f-4b74-a59d-acbe5013010c
+typeof(ex)
+
 # ╔═╡ 911e0b72-f306-4fa0-a4df-cee060ba1836
 "$ex = $(eval(ex))"
 
@@ -312,6 +336,12 @@ begin
 	println("cos(π) = ", cos(π))
 	println("sin(π) = ", sin(π))
 end
+
+# ╔═╡ b7ba7bb0-cc8e-4697-ac20-042da414b666
+myvar = 100
+
+# ╔═╡ cba59052-da84-402f-aa57-d313a44fdf50
+@show myvar
 
 # ╔═╡ bc755cd7-40ca-4ad6-9f88-8ff657e4e397
 begin
@@ -443,6 +473,12 @@ A[2:end-1]
 # ╔═╡ da28e370-0746-11eb-1ea1-91664661a74d
 push!(A, round(Int64, 1.3))
 
+# ╔═╡ 0ac2e6fb-4bc1-4288-acfa-ca504452ded9
+push!(A, round(1.3))
+
+# ╔═╡ 967d0ba6-c3fe-4155-b61f-a35e538d28fa
+push!(A, 1.0)
+
 # ╔═╡ dbabaeae-28a4-4c9a-b946-fa635d5b1f37
 md"""
 In Julia, the `!` at the end of a function simply indicates to the user that that function will mutate the state of one (or many) of its inputs, e.g., `push!(A, 1)` will mutate the array `A`.
@@ -461,6 +497,9 @@ md"""
 You can use $\LaTeX$ keyworks to get unicode characters.
 > **Example**: `\in` then hit `<TAB>`.
 """
+
+# ╔═╡ b644ff0d-181e-4406-af26-ebc4702a2c38
+∈
 
 # ╔═╡ e5afc920-0746-11eb-0558-79599697bec6
 4 ∈ A
@@ -508,6 +547,18 @@ b
 
 # ╔═╡ 49c63ba0-0748-11eb-158d-57dcd4ad537d
 c
+
+# ╔═╡ f4465f04-8dd2-44c5-b958-ced5a863446d
+α, β, γ = [1, 2, 3]
+
+# ╔═╡ ac25d3e9-ac00-493a-867e-71b8f19153b3
+α
+
+# ╔═╡ 07297641-5671-4003-b5d0-9151931c8480
+β
+
+# ╔═╡ e766ac50-7c97-4ed0-88d6-91b1df793a8b
+γ
 
 # ╔═╡ 7226fe92-0748-11eb-215e-49075766b2da
 md"""
@@ -831,8 +882,8 @@ You can also name the internal function, if you want.
 
 # ╔═╡ 60e50c10-074a-11eb-0249-339b5ee9bcf2
 function create_adder2(x)
-	function adder(x)
-		x + y
+	function adder(y)
+		return x + y
 	end
 	adder # Julia will automatically return the last statement, even without `return`
 end
@@ -872,7 +923,7 @@ condition = 10
 
 # ╔═╡ 6f1aed26-98a4-4488-b25c-8a1aab4c0050
 function p(c)
-	return s->Normal(s + c, 1)
+	return s -> Normal(s + c, 1)
 end
 
 # ╔═╡ 16693bfd-dc5c-4526-9fff-e8d488638420
@@ -978,6 +1029,9 @@ struct Panther <: Cat # Panther is also a subtype of Cat
 	Panther() = new("green")
 end
 
+# ╔═╡ f21bb97e-668b-48eb-96a2-9d82191e2f12
+Panther()
+
 # ╔═╡ 34216ec0-074b-11eb-0ec5-b933ea8ecf34
 subtypes(Cat)
 
@@ -1000,7 +1054,7 @@ md"""
 
 # ╔═╡ 3827f232-0914-11eb-3365-35e127a537ce
 function meow(animal::Lion)
-	return animal.roar 
+	return animal.roar
 end
 
 # ╔═╡ c26ed0e7-1883-4f82-a13c-005def6e78cd
@@ -1091,7 +1145,7 @@ norm([1,2,3])
 diagm([1,1,1])
 
 # ╔═╡ 8fa3ecd9-a81a-4789-9ce7-8f2602807643
-let
+vv = let
 	w = [0.4, 0.4, 0.2]
 	x = [1, 2, 3]
 	w'x
@@ -1297,7 +1351,7 @@ begin
 	😅 = "yes you can use emojis as variable names" # \:sweat_smile:
 	🍕 = "is arguable the best" # \:pizza:
 	🔥 = "this class" # \:fire:
-	
+
 	md"""
 	## Hiding/showing cells
 	Pluto allows you to easily hide and show cells to clean up the notebook.
@@ -1452,7 +1506,9 @@ begin
 	end
 
 	# Function-like object
-	(gs::GaussianSensor)(s) = rand(gs.Do(s))
+	function (gs::GaussianSensor)(s)
+		return rand(gs.Do(s))
+	end
 end
 
 # ╔═╡ 92f6133c-1e19-4b96-b43b-58bc67fbcfe8
@@ -1463,9 +1519,6 @@ sensor = GaussianSensor(Do)
 
 # ╔═╡ d5318314-8569-4652-a2b7-20eca1c7c6cd
 sensor(10)
-
-# ╔═╡ 5808f5d3-8bbd-4df6-8502-0e40335922e4
-sensor(50)
 
 # ╔═╡ edc61fc4-5123-439e-ab0d-29fc8cee5cf2
 md"""
@@ -1679,6 +1732,9 @@ candies = ["Sour Patch Kids", "Sour Punch Straws", "Sugar Lips"]
 # ╔═╡ f07431f4-984f-4882-8962-3cbbeaa1007a
 some_function(candies...)
 
+# ╔═╡ 16bda195-1626-4016-8e04-e377328f2361
+some_function(candies[1], candies[2], candies[3])
+
 # ╔═╡ 2d5920cb-c879-44e8-855d-8bd574c0f4bb
 md"""
 Where simply passing the vector as the input without splatting would cause an error.
@@ -1740,6 +1796,9 @@ Most of the unicode characters follow $\LaTeX$ names, such as `\square` for `□
 
 See the Julia docs for more examples: [https://docs.julialang.org/en/v1/manual/unicode-input/](https://docs.julialang.org/en/v1/manual/unicode-input/)
 """
+
+# ╔═╡ e5aa4307-ebec-452c-9202-7a6b2fc2fb23
+π
 
 # ╔═╡ 75f1a5d3-0472-4e31-9d74-fe44725b6a3e
 md"""
@@ -3815,6 +3874,7 @@ version = "1.4.1+2"
 # ╟─776449d6-2c4c-450f-a163-21b2290e4a12
 # ╠═8005fa69-78ea-40a8-9cda-8ea33470f899
 # ╠═433a69f0-074d-11eb-0698-f9113d9939c3
+# ╠═67ed81e1-4250-4fc4-96ac-b30d8650d0a5
 # ╠═4a4f2872-074d-11eb-0ec8-13783b11ffd7
 # ╠═5541c6ea-20cb-421f-9be9-009aebd80e6c
 # ╟─baf23507-63a7-472e-933c-e100b8cfae51
@@ -3823,6 +3883,7 @@ version = "1.4.1+2"
 # ╠═0f1aac87-102d-4fec-b012-e364a7a23b0f
 # ╟─50caeb00-073c-11eb-36ac-5b8839bb70ab
 # ╠═5996f670-073c-11eb-3a63-67246e676f4e
+# ╠═a22efc4d-8e8e-47dc-b163-2e4be63e73a8
 # ╠═5fe5f3f0-073c-11eb-33ae-2343a63d952d
 # ╠═62961fce-073c-11eb-315e-03a405d69157
 # ╠═8ca1d3a0-073c-11eb-2d51-7766203bdf92
@@ -3830,12 +3891,14 @@ version = "1.4.1+2"
 # ╠═9516be60-073c-11eb-277b-b59f20b2feba
 # ╠═9895d300-073c-11eb-1fe4-d3337747efcd
 # ╠═9be413a0-073c-11eb-3c73-df78ea75bcd1
+# ╠═6882a092-7d19-4934-af51-4a3f68854a7d
 # ╠═a10c4462-073c-11eb-31f8-6f675614356d
 # ╠═a4de820e-073c-11eb-374e-efd08bbc884c
 # ╠═ae65ee42-073c-11eb-1dbd-eb918f086ab7
 # ╟─b427431e-e220-416f-974f-791c43bf0c18
 # ╠═238efdef-6820-48dd-a24f-9b7c8f108f5d
 # ╠═92fb38fc-c10d-4a66-9bfe-dfa73f3a7996
+# ╠═fe5cca11-d625-44f8-88a9-31763026fed5
 # ╠═9141fbe7-5250-4aff-8754-49a5c9e1884e
 # ╟─b4ad4aa0-073c-11eb-238e-a913116c0944
 # ╠═bf0155a2-073c-11eb-1ff2-e9d78baf273a
@@ -3845,7 +3908,10 @@ version = "1.4.1+2"
 # ╠═cd146470-073c-11eb-131c-250b433dbe74
 # ╟─d5dc2a20-073c-11eb-1667-038dd7a06c63
 # ╠═e05151b0-073c-11eb-2cd2-75f9f350b266
+# ╠═d4aae5af-7af2-4a3a-a32e-f3a4b80f8651
 # ╠═69601831-6265-4341-beed-4c01a54ed705
+# ╠═b2571f19-2ffc-4850-8e67-f9fbacd69a9c
+# ╠═326bbd3c-d107-4b6e-a35e-14ee93febc0e
 # ╟─e90af052-709d-4587-9982-f224afd49af2
 # ╠═ddaf4dc2-d5a6-458e-a7f4-280bf64663f3
 # ╠═4d0b3fd3-a15d-48fc-9219-cd6e02bb5b03
@@ -3864,12 +3930,15 @@ version = "1.4.1+2"
 # ╠═993a33e0-073d-11eb-2ded-4fc896fd19d7
 # ╟─7022b6d0-1a78-4b30-9eb4-42fb680796a4
 # ╠═71cb3a8f-3f0c-4ea2-a1e7-6a91e4746953
+# ╠═faa326ba-0a7f-4b74-a59d-acbe5013010c
 # ╠═911e0b72-f306-4fa0-a4df-cee060ba1836
 # ╟─f99743b0-0745-11eb-049e-71c7b72884d1
 # ╟─fbaad713-216b-4557-8132-3a1e95ed0a27
 # ╠═4a2f40a4-029f-43bb-9f55-3bf001861d0c
 # ╟─d3d5cde4-8d81-45b1-8554-4ee2e009074c
 # ╠═efa419b0-40ce-41ac-a660-5bd1743b0e6c
+# ╠═b7ba7bb0-cc8e-4697-ac20-042da414b666
+# ╠═cba59052-da84-402f-aa57-d313a44fdf50
 # ╠═bc755cd7-40ca-4ad6-9f88-8ff657e4e397
 # ╠═a0ffcbd0-073d-11eb-3c0a-bfc967428073
 # ╠═4968e820-0742-11eb-1b1b-034751f95fb9
@@ -3906,10 +3975,13 @@ version = "1.4.1+2"
 # ╠═cd941030-0746-11eb-34d7-216aa0f8f33d
 # ╠═d6663620-0746-11eb-01dc-27b5e3b11ab8
 # ╠═da28e370-0746-11eb-1ea1-91664661a74d
+# ╠═0ac2e6fb-4bc1-4288-acfa-ca504452ded9
+# ╠═967d0ba6-c3fe-4155-b61f-a35e538d28fa
 # ╟─dbabaeae-28a4-4c9a-b946-fa635d5b1f37
 # ╠═df66e620-0746-11eb-37b9-d3f3ab3dd12f
 # ╠═e3e171c0-0746-11eb-0e1d-c3fc24347d47
 # ╟─e99fa0f0-0746-11eb-1f5c-7da5d6765131
+# ╠═b644ff0d-181e-4406-af26-ebc4702a2c38
 # ╠═e5afc920-0746-11eb-0558-79599697bec6
 # ╠═e8dc9f10-0746-11eb-2c56-c9383000043c
 # ╠═1b239000-0747-11eb-0a63-d9e58c6dfda3
@@ -3924,6 +3996,10 @@ version = "1.4.1+2"
 # ╠═3589dfc0-0748-11eb-1b7f-672e2f6dcf53
 # ╠═48a9a810-0748-11eb-0b15-e9085ebd7b52
 # ╠═49c63ba0-0748-11eb-158d-57dcd4ad537d
+# ╠═f4465f04-8dd2-44c5-b958-ced5a863446d
+# ╠═ac25d3e9-ac00-493a-867e-71b8f19153b3
+# ╠═07297641-5671-4003-b5d0-9151931c8480
+# ╠═e766ac50-7c97-4ed0-88d6-91b1df793a8b
 # ╟─7226fe92-0748-11eb-215e-49075766b2da
 # ╠═5bfd2a90-0748-11eb-3b5c-8f191bd23f1c
 # ╠═7f8e8b20-0748-11eb-39da-435f6c49934a
@@ -4017,6 +4093,7 @@ version = "1.4.1+2"
 # ╟─f447e9a0-074a-11eb-1a5b-738a852d47a0
 # ╠═2754b1f0-0914-11eb-1052-1159804bcc1c
 # ╠═0bb9a6f0-074b-11eb-0cd5-55f6817db5fd
+# ╠═f21bb97e-668b-48eb-96a2-9d82191e2f12
 # ╠═34216ec0-074b-11eb-0ec5-b933ea8ecf34
 # ╟─9dde0a7b-bbca-4970-a1ea-db47bbdfa102
 # ╟─573a1ce0-074b-11eb-2c5d-8ddb9d0c07ed
@@ -4119,7 +4196,6 @@ version = "1.4.1+2"
 # ╠═92f6133c-1e19-4b96-b43b-58bc67fbcfe8
 # ╠═822610e1-d90b-46d0-a78b-7661cb492299
 # ╠═d5318314-8569-4652-a2b7-20eca1c7c6cd
-# ╠═5808f5d3-8bbd-4df6-8502-0e40335922e4
 # ╟─edc61fc4-5123-439e-ab0d-29fc8cee5cf2
 # ╟─cd775016-1af0-494b-b8d6-abc98afd8cae
 # ╠═0cc2cd07-6de7-4c51-bbf3-a2a84911d0cc
@@ -4152,6 +4228,7 @@ version = "1.4.1+2"
 # ╠═6d34e3cd-8ca0-44fe-852d-3d09922802dc
 # ╠═b1b0037a-f058-4bac-9d8f-038260c0eff1
 # ╠═f07431f4-984f-4882-8962-3cbbeaa1007a
+# ╠═16bda195-1626-4016-8e04-e377328f2361
 # ╟─2d5920cb-c879-44e8-855d-8bd574c0f4bb
 # ╠═215be802-1998-4887-86a6-3bb8e6e5128c
 # ╟─4bbe0e01-b27d-4247-b294-42892db75702
@@ -4162,6 +4239,7 @@ version = "1.4.1+2"
 # ╟─87682e53-7286-4a17-9ee4-2f725cd508a0
 # ╠═cb3646a1-4d12-4087-8fad-18e44c357623
 # ╟─3637fed7-5acc-49ad-8ec0-b7b48ea91d55
+# ╠═e5aa4307-ebec-452c-9202-7a6b2fc2fb23
 # ╟─75f1a5d3-0472-4e31-9d74-fe44725b6a3e
 # ╟─1e5c89ac-9cbf-4c2c-9422-4f4e1954eff3
 # ╠═f736d079-49dc-4ae8-ae6e-a38318c829b8
