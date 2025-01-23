@@ -21,7 +21,7 @@ begin
 	using Plots
 
 	# Change this to :dark if you're using a dark themed browser (:default otherwise)
-	theme(:dark, background_color_outside=:transparent)
+	theme(:default, background_color_outside=:transparent)
 
 	# LaTeX-style plots
 	default(fontfamily="Computer Modern", framestyle=:box)
