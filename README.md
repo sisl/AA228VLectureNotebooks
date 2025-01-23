@@ -11,6 +11,7 @@ Uses the [`StanfordAA228V.jl`](https://github.com/sisl/StanfordAA228V.jl) Julia 
 
 ## Julia/Pluto Session
 [![html](https://img.shields.io/badge/static%20html-Julia%20Pluto-0072B2)](https://sisl.github.io/AA228VLectureNotebooks/media/html/julia_pluto_session.html)
+[![html](https://img.shields.io/badge/static%20html-Julia%20Plotting-0072B2)](https://sisl.github.io/AA228VLectureNotebooks/media/html/julia_plotting.html)
 
 The session on using Julia and Pluto can be viewed as a [static notebook](https://sisl.github.io/AA228VLectureNotebooks/media/html/julia_pluto_session.html) or run locally by downloading [`notebooks/julia_pluto_session.jl`](https://github.com/sisl/AA228VLectureNotebooks/blob/main/notebooks/julia_pluto_session.jl) and opening it in a Pluto session. A link to the session recording will be on Canvas.
 
