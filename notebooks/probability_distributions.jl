@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.20.4
+# v0.20.3
 
 using Markdown
 using InteractiveUtils
@@ -354,17 +354,6 @@ md"""
 Number of data points: $(@bind npoints NumberField(0:20:200, default=20))
 """
 
-# ╔═╡ 1adefa8e-faeb-4783-88d3-45be4ffa5a4b
-md"""
-Number same: $(@bind nsame NumberField(0:1:50, default=0))
-Number different: $(@bind ndiff NumberField(0:1:50, default=0))
-
-Posterior distribution:
-"""
-
-# ╔═╡ 8acdb942-28ec-4f28-ad31-1fc98ce09283
-posterior = Beta(prior.α + nsame, prior.β + ndiff);
-
 # ╔═╡ 01c52339-ebff-49f7-a34e-882270c33baa
 begin
 	struct BayesianParameterEstimation
@@ -399,6 +388,17 @@ begin
 	alg_bayesian = BayesianParameterEstimation(likelihood, prior_dist, sampler, m)
 	θdist = fit_bayesian(alg_bayesian, zip(first.(data)[inds], last.(data)[inds]))
 end;
+
+# ╔═╡ 1adefa8e-faeb-4783-88d3-45be4ffa5a4b
+md"""
+Number same: $(@bind nsame NumberField(0:1:50, default=0))
+Number different: $(@bind ndiff NumberField(0:1:50, default=0))
+
+Posterior distribution:
+"""
+
+# ╔═╡ 8acdb942-28ec-4f28-ad31-1fc98ce09283
+posterior = Beta(prior.α + nsame, prior.β + ndiff);
 
 # ╔═╡ 9a04b253-0bbe-4aaf-8312-991b75af77d2
 1 - cdf(posterior, 0.5)
@@ -624,7 +624,7 @@ Turing = "~0.35.5"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.11.2"
+julia_version = "1.11.1"
 manifest_format = "2.0"
 project_hash = "6ef60562d95491b497e35dbd2c8b02c3daacfc52"
 
