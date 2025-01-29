@@ -62,6 +62,18 @@ title(presentation)
 # ╔═╡ e920e116-40ae-4d48-a4b2-b6cad9e4fb2c
 @subsection "Hand-Designed Proposal Distribution"
 
+# ╔═╡ b67b1441-e941-459c-91bb-94626129e9bb
+@section "Markov Chain Monte Carlo"
+
+# ╔═╡ 786415ef-e2ca-457b-8b00-2484ea68a6b6
+@subsection "Multiple Failure Modes"
+
+# ╔═╡ 44cb5a7e-edbe-47f1-9037-0fca6eac25d4
+@subsection "Smoothing"
+
+# ╔═╡ 6897d994-d460-474e-af03-2862b838965a
+@section "Pendulum"
+
 # ╔═╡ 39b9a784-2c8b-46a2-a414-1252638ade67
 begin
 	Bonds = PlutoUI.BuiltinsNotebook.AbstractPlutoDingetjes.Bonds
@@ -95,7 +107,7 @@ end
 md"""
  Threshold: $(@bind γ Slider(-3:0.1:-1, show_value=true, default=-1))
 
- $m$: $(@bind m Slider(0:5:1000, show_value=true, default=50))
+ $m$: $(@bind m Slider(5:5:1000, show_value=true, default=50))
 """
 
 # ╔═╡ 57c4a43d-bdf5-4f19-9be5-4fc45538d131
@@ -129,7 +141,7 @@ end
 md"""
  $\mu$: $(@bind μ Slider(-3:0.1:0, show_value=true, default=0))
 
- $c$: $(@bind c Slider(0.25:0.05:1.0, show_value=true, default=1.0))
+ $c$: $(@bind c Slider(0.00:0.025:1.0, show_value=true, default=1.0))
 """
 
 # ╔═╡ 783bf645-831b-4ddf-893a-ebe29e06ea15
@@ -138,8 +150,351 @@ begin
 	plot_rejection_sampling(p̄, qhd, c, m)
 end
 
+# ╔═╡ 9a63f3c7-3f6d-440e-a970-c4e1f2496028
+md"""
+ Number of samples: $(@bind ns Slider(1:1:450, show_value=true, default=1))
+"""
+
+# ╔═╡ 0848b64b-0397-4209-ba2e-7abec3ea624a
+md"""
+ Zoom in: $(@bind z CheckBox())
+"""
+
+# ╔═╡ 526bdef3-8d6d-421b-a0dd-716a2d11a705
+md"""
+ Initial sample: $(@bind τ_init NumberField(-2:0.1:2, default=-1.2))
+
+ Burn in: $(@bind m_burnin NumberField(1:10:50, default=1))
+"""
+
+# ╔═╡ 140d4337-feba-43ab-aa92-52067281aca1
+md"""
+ Number of samples: $(@bind ns2 Slider(1:1:2000, show_value=true, default=1))
+"""
+
+# ╔═╡ 39feb11a-8959-4c25-8553-9667e7e9eb79
+md"""
+ $\epsilon$: $(@bind ϵ Slider(0.05:0.05:0.5, show_value=true, default=0.05))
+"""
+
+# ╔═╡ 4aa64b86-fc3c-4ea4-879e-e01d87492f92
+md"""
+ $\epsilon$: $(@bind ϵpend Slider(0.01:0.01:0.15, show_value=true, default=0.15))
+"""
+
+# ╔═╡ 770ff55b-7519-4207-9454-15ab53d0a3a4
+begin
+	struct SimpleGaussianTrajectoryDistribution <: TrajectoryDistribution
+	    μ
+	    σ
+	end
+	function StanfordAA228V.initial_state_distribution(p::SimpleGaussianTrajectoryDistribution)
+	    return Normal(p.μ, p.σ)
+	end
+	function StanfordAA228V.disturbance_distribution(p::SimpleGaussianTrajectoryDistribution, t)
+	    D = DisturbanceDistribution(o->Deterministic(),
+	                                (s,a)->Deterministic(),
+	                                s->Deterministic())
+	    return D
+	end
+	StanfordAA228V.depth(p::SimpleGaussianTrajectoryDistribution) = 1
+
+	struct MCMCSampling
+	    p̄        # target density
+	    g        # kernel: τ′ = rollout(sys, g(τ))
+	    τ        # initial trajectory
+	    k_max    # max iterations
+	    m_burnin # number of samples to discard from burn-in
+	    m_skip   # number of samples to skip for thinning
+	end
+	
+	function sample_failures(alg::MCMCSampling, sys, ψ)
+	    p̄, g, τ = alg.p̄, alg.g, alg.τ
+	    k_max, m_burnin, m_skip = alg.k_max, alg.m_burnin, alg.m_skip
+	    τs = [τ]
+		τ′s = []
+	    for k in 1:k_max
+	        τ′ = rollout(sys, g(τ))
+			push!(τ′s, τ′)
+	        if rand() < (p̄(τ′) * pdf(g(τ′), τ)) / (p̄(τ) * pdf(g(τ), τ′))
+	            τ = τ′
+	        end
+	        push!(τs, τ)
+	    end
+	    return τs[m_burnin:m_skip:end], τ′s[m_burnin:m_skip:end]
+	end
+
+	agent = NoAgent()
+	env = SimpleGaussian()
+	sensor = IdealSensor()
+	sys = System(agent, env, sensor)
+	ψ = LTLSpecification(@formula □(s->s > -1));
+
+	Random.seed!(1)
+	p = NominalTrajectoryDistribution(sys, 1)
+	p̄2 = τ -> isfailure(ψ, τ) * pdf(p, τ)
+	simple_gaussian_kernel(τ) = SimpleGaussianTrajectoryDistribution(τ[1].s, 1.0)
+	τ_initial = rollout(sys, τ_init, p)
+	# τ_initial = [(;s=1.0, a=0, o=0, x=Disturbance(0, 0, 0))]
+	k_max = 500
+	# m_burnin = 1
+	m_skip = 1
+	
+	alg = MCMCSampling(p̄2, simple_gaussian_kernel, τ_initial, k_max, 1, m_skip)
+	τs, τ′s = sample_failures(alg, sys, ψ)
+
+	ψ2 = LTLSpecification(@formula □(s->abs(s) < 2))
+	p̄two = τ -> isfailure(ψ2, τ) * pdf(p, τ)
+	
+	alg2 = MCMCSampling(p̄two, simple_gaussian_kernel, rollout(sys, -2.1, p), 2000, 1, m_skip)
+	τs2, τ′s2 = sample_failures(alg2, sys, ψ2)
+
+	# ϵ₁ = 0.3
+	Random.seed!(1)
+	p̄s = τ -> pdf(Normal(0, ϵ), max(robustness([step.s for step in τ], ψ2.formula), 0)) * pdf(p, τ)
+	algs = MCMCSampling(p̄s, simple_gaussian_kernel, rollout(sys, -2.1, p), 2000, 1, m_skip)
+	τss, τ′ss = sample_failures(algs, sys, ψ2)
+	
+	md"> _MCMC_"
+end
+
+# ╔═╡ 03d47156-8c3b-43a1-bcfe-d06aff84ea7f
+begin
+	function plot_mcmc_sampling(τs, τ′s)
+		vals = [τ[1].s for τ in τs]
+		vp = [τ[1].s for τ in τ′s]
+		times = collect(1:length(τs))
+		ylims = z ? (0, 50) : (0, 400)
+		p1 = plot(vals, times, legend=false, ylims=ylims, xlims=(-4, 4), color=theblue, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false)
+		scatter!(p1, [vals[end]], [times[end]], markercolor=theblue, markerstrokecolor=theblue, markersize=6)
+		plot!(p1, rectangle(3, 400, -4, 0), opacity=0.3, color=thered, label=false)
+		if m_burnin > 1
+			plot!(p1, rectangle(8, m_burnin, -4, 0), opacity=0.7, color=:black, linecolor=:gray, label=false)
+		end
+
+		p2 = plot()
+		plot!(p2, x->0.4*pdf(truncated(Normal(), upper=γ), x), -4, 4, color=:indianred1, alpha=0.5, lw=2)
+		plot!(p2, x->pdf(Normal(vals[end], 1), x), -4, 4, color=:lightgray, lw=2, legend=false, xlims=(-4, 4), ylims=(0, 0.8), grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=([vals[end], vp[end]], ["τ", "τ′"]))
+		scatter!(p2, [vals[end]], [0.01], markercolor=theblue, markerstrokecolor=theblue, markersize=5)
+		scatter!(p2, [vp[end]], [0.01], markercolor=:lightgray, markerstrokecolor=:lightgray, markersize=5)
+		plot!(p2, rectangle(3, 0.8, -4, 0), opacity=0.3, color=thered, label=false)
+
+		p3 = plot(x->pdf(truncated(Normal(), upper=γ), x), -4, 4, legend=false, xlims=(-4, 4), ylims=(0, pdf(truncated(Normal(), upper=γ), γ) + 0.25), color=:indianred1, lw=5, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xlabel="τ", size=(650, 350))
+		histogram!(p3, vals[m_burnin:end], bins=20, normalize=true, color=thered, alpha=0.8, linecolor=thered)
+
+		accept_prob = p̄2(τ′s[end]) / p̄2(τs[end])
+		p4 = plot(rectangle(0.2, min(accept_prob, 1.0), 0, 0), color=:gray, label=false, aspect_ratio=:equal, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false, ylims=(0, 1), xlims=(0, 0.2))
+
+		pblank = plot(aspect_ratio=:equal, grid=false, bg="transparent", fg="transparent", yticks=false, xticks=false, ylims=(0, 1), xlims=(0, 0.2), framestyle=:none)
+
+		l = @layout [grid(3, 2, widths=[0.93, 0.07])]
+		plot(p1, pblank, p2, p4, p3, pblank, layout=l, size=(650, 600))
+	end
+	
+	plot_mcmc_sampling(τs[1:ns], τ′s[1:ns])
+end
+
+# ╔═╡ c4eed575-ff97-4d69-8f9d-122d6e9aca45
+begin
+	function plot_mm(τs, τ′s)
+		vals = [τ[1].s for τ in τs]
+		vp = [τ[1].s for τ in τ′s]
+		times = collect(1:length(τs))
+		ylims = z ? (0, 50) : (0, 2000)
+		p1 = plot(vals, times, legend=false, ylims=ylims, xlims=(-4, 4), color=theblue, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false)
+		scatter!(p1, [vals[end]], [times[end]], markercolor=theblue, markerstrokecolor=theblue, markersize=6)
+		plot!(p1, rectangle(2, 2000, -4, 0), opacity=0.3, color=thered, label=false)
+		plot!(p1, rectangle(2, 2000, 2, 0), opacity=0.3, color=thered, label=false)
+
+		pnom(x) = abs(x) > 2.0 ? pdf(Normal(), x) : 0.0
+		
+		p2 = plot()
+		plot!(p2,x->0.5 * pnom(x) / (2 * cdf(Normal(), -2)), -4, 4, color=:indianred1, alpha=0.5, lw=2)
+		plot!(p2, x->pdf(Normal(vals[end], 1), x), -4, 4, color=:lightgray, lw=2, legend=false, xlims=(-4, 4), ylims=(0, 0.8), grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=([vals[end], vp[end]], ["τ", "τ′"]))
+		scatter!(p2, [vals[end]], [0.01], markercolor=theblue, markerstrokecolor=theblue, markersize=5)
+		scatter!(p2, [vp[end]], [0.01], markercolor=:lightgray, markerstrokecolor=:lightgray, markersize=5)
+		plot!(p2, rectangle(2, 400, -4, 0), opacity=0.3, color=thered, label=false)
+		plot!(p2, rectangle(2, 400, 2, 0), opacity=0.3, color=thered, label=false)
+
+		Plots.savefig(p2, "test.png")
+
+		p3 = plot(x->pnom(x) / (2 * cdf(Normal(), -2)), -4, 4, legend=false, xlims=(-4, 4), ylims=(0, pnom(2.1) /  (2 * cdf(Normal(), -2)) + 0.6), color=:indianred1, lw=5, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xlabel="τ", size=(650, 350))
+		histogram!(p3, vals, bins=20, normalize=true, color=thered, alpha=0.8, linecolor=thered)
+
+		accept_prob = p̄two(τ′s[end]) / p̄two(τs[end])
+		p4 = plot(rectangle(0.2, min(accept_prob, 1.0), 0, 0), color=:gray, label=false, aspect_ratio=:equal, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false, ylims=(0, 1), xlims=(0, 0.2))
+
+		pblank = plot(aspect_ratio=:equal, grid=false, bg="transparent", fg="transparent", yticks=false, xticks=false, ylims=(0, 1), xlims=(0, 0.2), framestyle=:none)
+
+		l = @layout [grid(3, 2, widths=[0.93, 0.07])]
+		plot(p1, pblank, p2, p4, p3, pblank, layout=l, size=(650, 600))
+	end
+	
+	plot_mm(τs2[1:ns2], τ′s2[1:ns2])
+end
+
+# ╔═╡ 1d4ba48d-5b7b-460b-b33a-c508f820a216
+begin
+	function plot_smoothed(τs)
+		pnom(x) = abs(x) > 2.0 ? pdf(Normal(), x) : 0.0
+		p1 = plot(pnom, -4, 4, legend=false, xlims=(-4, 4), ylims=(0, pnom(2.1) + 0.03), color=:indianred1, lw=5, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false)
+		smoothing_density(x; ϵ=0.1) = pdf(Normal(), x) * pdf(Normal(0, ϵ), max(2 - abs(x), 0)) / pdf(Normal(0, ϵ), 0)
+		plot!(p1, x->smoothing_density(x, ϵ=ϵ), -4, 4, color=thepurple, lw=2)
+
+		vals = [τ[1].s for τ in τs]
+		times = collect(1:length(τs))
+		ylims = z ? (0, 50) : (0, 2000)
+		p2 = plot(vals, times, legend=false, ylims=ylims, xlims=(-4, 4), color=theblue, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false)
+		scatter!(p2, [vals[end]], [times[end]], markercolor=theblue, markerstrokecolor=theblue, markersize=6)
+		plot!(p2, rectangle(2, 2000, -4, 0), opacity=0.3, color=thered, label=false)
+		plot!(p2, rectangle(2, 2000, 2, 0), opacity=0.3, color=thered, label=false)
+
+		p3 = plot(pnom, -4, 4, legend=false, xlims=(-4, 4), ylims=(0, pnom(2.1) + 0.03), color=:indianred1, lw=5, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false)
+		plot!(p3, x->smoothing_density(x, ϵ=ϵ), -4, 4, color=thepurple, lw=2)
+		failure_samples = filter(τ -> isfailure(ψ2, τ), τs)
+		failure_xs = [τ[1].s for τ in failure_samples]
+		failure_ys = [rand() * smoothing_density((τ[1].s), ϵ=ϵ) for τ in failure_samples]
+		success_samples = filter(τ -> !isfailure(ψ2, τ), τs)
+		success_xs = [τ[1].s for τ in success_samples]
+		success_ys = [rand() * smoothing_density((τ[1].s), ϵ=ϵ) for τ in success_samples]
+		scatter!(p3, failure_xs, failure_ys, mc=thered, msc=thered, ms=1.5)
+		scatter!(p3, success_xs, success_ys, mc=thepurple, msc=thepurple, ms=1.5)
+
+		p4 = plot(x->pnom(x) / (2 * cdf(Normal(), -2)), -4, 4, legend=false, xlims=(-4, 4), ylims=(0, pnom(2.1) /  (2 * cdf(Normal(), -2)) + 0.6), color=:indianred1, lw=5, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xlabel="τ", size=(650, 350))
+		histogram!(p4, failure_xs, bins=80, normalize=true, color=thered, alpha=0.8, linecolor=thered)
+
+		return plot(p1, p2, p3, p4, layout=(4, 1), size=(500, 650))
+	end
+	
+	plot_smoothed(τss)
+end
+
+# ╔═╡ 5afdd3f9-affd-4fa4-b725-7574c32aa844
+begin
+	struct PendulumTrajectoryDistribution <: TrajectoryDistribution
+        μ₁
+        Σ₁
+        μs # vector of means of length d
+        Σs # vector of covariances of length d
+    end
+    function StanfordAA228V.initial_state_distribution(p::PendulumTrajectoryDistribution)
+        return MvNormal(p.μ₁, p.Σ₁) #Product([Uniform(-π / 16, π / 16), Uniform(-1., 1.)])
+    end
+    function StanfordAA228V.disturbance_distribution(p::PendulumTrajectoryDistribution, t)
+        D = DisturbanceDistribution((o) -> Deterministic(),
+                                    (s, a) -> Deterministic(),
+                                    (s) -> MvNormal(p.μs[t], p.Σs[t]))
+        return D
+    end
+    StanfordAA228V.depth(p::PendulumTrajectoryDistribution) = length(p.μs)
+
+	agent2 = ProportionalController([-15., -8.])
+	env2 = InvertedPendulum()
+	sensor2 = AdditiveNoiseSensor(MvNormal(zeros(2), (0.15)^2 * I))
+	inverted_pendulum = System(agent2, env2, sensor2)
+	ψp = LTLSpecification(@formula □(s -> abs(s[1]) < π / 4))
+
+	Random.seed!(4)
+	pp = NominalTrajectoryDistribution(inverted_pendulum, 21)
+	inverted_pendulum_kernel(τ; Σ₁=0.5^2 * I, Σ=0.05^2 * I) = PendulumTrajectoryDistribution(τ[1].s, Σ₁, [step.x.xo for step in τ], [Σ for step in τ])
+	global τ_in = rollout(inverted_pendulum, pp)
+	while !isfailure(ψp, τ_in)
+		global τ_in = rollout(inverted_pendulum, pp)
+	end
+	k_maxp = 50000
+	m_burninp = 1
+	m_skipp = 500
+
+	Random.seed!(4)
+	# τ_initial = rollout(inverted_pendulum, p)
+	# ϵp = 0.15
+	p̄p = τ -> pdf(Normal(0, ϵpend), max(robustness([step.s for step in τ], ψp.formula), 0)) * pdf(pp, τ)
+	algp = MCMCSampling(p̄p, inverted_pendulum_kernel, τ_in, k_maxp, m_burninp, m_skipp)
+	τsp, τs′p = sample_failures(algp, inverted_pendulum, ψp)
+	
+	md"> _Pendulum MCMC_"
+end
+
 # ╔═╡ 06edfbee-5d16-4e83-a4f9-caf5bd901c00
 @bind dark_mode DarkModeIndicator()
+
+# ╔═╡ f58a6427-a0f5-4a0b-ac01-6f017d12bcc7
+begin
+	function plot_it(sys, ψ, τ=missing;
+					is_dark_mode=dark_mode,
+					title="Inverted Pendulum",
+					max_lines=100, size=(680,350), plot_successes=true, kwargs...)
+		if is_dark_mode
+			p = plot(
+				size=size,
+				grid=false,
+				bg="transparent",
+				background_color_inside="#1A1A1A",
+				fg="white",
+			)
+		else
+			p = plot(
+				size=size,
+				grid=false,
+				bg="transparent",
+				background_color_inside="white",
+			)
+		end
+	
+		plot!(p, rectangle(2, 1, 0, π/4), opacity=0.5, color="#F5615C", label=false)
+		plot!(p, rectangle(2, 1, 0, -π/4-1), opacity=0.5, color="#F5615C", label=false)
+		xlabel!(p, "Time (s)")
+		ylabel!(p, "𝜃 (rad)")
+		title!(p, title)
+		xlims!(p, 0, 1)
+		ylims!(p, -1.2, 1.2)
+		# StanfordAA228V.set_aspect_ratio!(p)
+	
+		function plot_pendulum_traj!(p, τ; lw=2, α=1, color="#009E73")
+			X = range(0, step=sys.env.dt, length=length(τ))
+			plot!(p, X, [step.s[1] for step in τ]; lw, color, α, label=false)
+		end
+	
+		if τ isa Vector{<:Vector}
+			# Multiple trajectories
+			τ_successes = filter(τᵢ->!isfailure(ψ, τᵢ), τ)
+			τ_failures = filter(τᵢ->isfailure(ψ, τᵢ), τ)
+			if plot_successes
+				for (i,τᵢ) in enumerate(τ_successes)
+					if i > max_lines
+						break
+					else
+						plot_pendulum_traj!(p, τᵢ; lw=1, α=0.75, color="#009E73")
+					end
+				end
+			end
+	
+			for τᵢ in τ_failures
+				plot_pendulum_traj!(p, τᵢ; lw=1, α=1, color="#F5615C")
+			end
+		elseif τ isa Vector
+			# Single trajectory
+			get_color(ψ, τ) = isfailure(ψ, τ) ? "#F5615C" : "#009E73"
+			plot_pendulum_traj!(p, τ; lw=2, color=get_color(ψ, τ))
+		end
+	
+		return p
+	end
+	
+	function plot_both(sys, ψ, τ=missing;
+					is_dark_mode=dark_mode,
+					title="Inverted Pendulum",
+					max_lines=100, size=(680,350))
+		p1 = plot_it(sys, ψ, τ, is_dark_mode=dark_mode, title="Falsification", max_lines=max_lines, size=size)
+		p2 = plot_it(sys, ψ, τ, is_dark_mode=dark_mode, title="Failure Distribution", max_lines=max_lines, size=size, plot_successes=false)
+		return plot(p1, p2)
+	end
+
+	md"> _Pendulum Plotting_"
+end
+
+# ╔═╡ ceaa55b6-cc62-4dda-9970-8b23ecb6a27d
+plot_both(inverted_pendulum, ψp, τsp)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2062,7 +2417,24 @@ version = "1.4.1+2"
 # ╟─e920e116-40ae-4d48-a4b2-b6cad9e4fb2c
 # ╟─91f3f891-bf54-4e5d-a9e7-9e1579500efa
 # ╟─783bf645-831b-4ddf-893a-ebe29e06ea15
+# ╟─b67b1441-e941-459c-91bb-94626129e9bb
+# ╟─9a63f3c7-3f6d-440e-a970-c4e1f2496028
+# ╟─0848b64b-0397-4209-ba2e-7abec3ea624a
+# ╟─03d47156-8c3b-43a1-bcfe-d06aff84ea7f
+# ╟─526bdef3-8d6d-421b-a0dd-716a2d11a705
+# ╟─786415ef-e2ca-457b-8b00-2484ea68a6b6
+# ╟─140d4337-feba-43ab-aa92-52067281aca1
+# ╟─c4eed575-ff97-4d69-8f9d-122d6e9aca45
+# ╟─44cb5a7e-edbe-47f1-9037-0fca6eac25d4
+# ╟─39feb11a-8959-4c25-8553-9667e7e9eb79
+# ╟─1d4ba48d-5b7b-460b-b33a-c508f820a216
+# ╟─6897d994-d460-474e-af03-2862b838965a
+# ╟─4aa64b86-fc3c-4ea4-879e-e01d87492f92
+# ╟─ceaa55b6-cc62-4dda-9970-8b23ecb6a27d
 # ╟─39b9a784-2c8b-46a2-a414-1252638ade67
+# ╟─770ff55b-7519-4207-9454-15ab53d0a3a4
+# ╟─5afdd3f9-affd-4fa4-b725-7574c32aa844
+# ╟─f58a6427-a0f5-4a0b-ac01-6f017d12bcc7
 # ╟─480491fb-9f19-49ee-8f0f-0bd8c1c352d8
 # ╟─06edfbee-5d16-4e83-a4f9-caf5bd901c00
 # ╟─00000000-0000-0000-0000-000000000001
