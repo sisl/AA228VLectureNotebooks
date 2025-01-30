@@ -162,7 +162,7 @@ md"""
 
 # ╔═╡ 526bdef3-8d6d-421b-a0dd-716a2d11a705
 md"""
- Initial sample: $(@bind τ_init NumberField(-2:0.1:2, default=-1.2))
+ Initial sample: $(@bind τ_init NumberField(-1.8:0.1:2, default=-2))
 
  Burn in: $(@bind m_burnin NumberField(1:10:50, default=1))
 """
@@ -273,13 +273,13 @@ begin
 		end
 
 		p2 = plot()
-		plot!(p2, x->0.4*pdf(truncated(Normal(), upper=γ), x), -4, 4, color=:indianred1, alpha=0.5, lw=2)
+		plot!(p2, x->0.4*pdf(truncated(Normal(), upper=-1), x), -4, 4, color=:indianred1, alpha=0.5, lw=2)
 		plot!(p2, x->pdf(Normal(vals[end], 1), x), -4, 4, color=:lightgray, lw=2, legend=false, xlims=(-4, 4), ylims=(0, 0.8), grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=([vals[end], vp[end]], ["τ", "τ′"]))
 		scatter!(p2, [vals[end]], [0.01], markercolor=theblue, markerstrokecolor=theblue, markersize=5)
 		scatter!(p2, [vp[end]], [0.01], markercolor=:lightgray, markerstrokecolor=:lightgray, markersize=5)
 		plot!(p2, rectangle(3, 0.8, -4, 0), opacity=0.3, color=thered, label=false)
 
-		p3 = plot(x->pdf(truncated(Normal(), upper=γ), x), -4, 4, legend=false, xlims=(-4, 4), ylims=(0, pdf(truncated(Normal(), upper=γ), γ) + 0.25), color=:indianred1, lw=5, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xlabel="τ", size=(650, 350))
+		p3 = plot(x->pdf(truncated(Normal(), upper=-1), x), -4, 4, legend=false, xlims=(-4, 4), ylims=(0, pdf(truncated(Normal(), upper=γ), γ) + 0.25), color=:indianred1, lw=5, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xlabel="τ", size=(650, 350))
 		histogram!(p3, vals[m_burnin:end], bins=20, normalize=true, color=thered, alpha=0.8, linecolor=thered)
 
 		accept_prob = p̄2(τ′s[end]) / p̄2(τs[end])
@@ -316,8 +316,6 @@ begin
 		plot!(p2, rectangle(2, 400, -4, 0), opacity=0.3, color=thered, label=false)
 		plot!(p2, rectangle(2, 400, 2, 0), opacity=0.3, color=thered, label=false)
 
-		Plots.savefig(p2, "test.png")
-
 		p3 = plot(x->pnom(x) / (2 * cdf(Normal(), -2)), -4, 4, legend=false, xlims=(-4, 4), ylims=(0, pnom(2.1) /  (2 * cdf(Normal(), -2)) + 0.6), color=:indianred1, lw=5, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xlabel="τ", size=(650, 350))
 		histogram!(p3, vals, bins=20, normalize=true, color=thered, alpha=0.8, linecolor=thered)
 
@@ -337,7 +335,7 @@ end
 begin
 	function plot_smoothed(τs)
 		pnom(x) = abs(x) > 2.0 ? pdf(Normal(), x) : 0.0
-		p1 = plot(pnom, -4, 4, legend=false, xlims=(-4, 4), ylims=(0, pnom(2.1) + 0.03), color=:indianred1, lw=5, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false)
+		p1 = plot(pnom, -4, 4, legend=false, xlims=(-4, 4), ylims=(0, pnom(2.1) + 0.03), color=:indianred1, lw=5, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false)
 		smoothing_density(x; ϵ=0.1) = pdf(Normal(), x) * pdf(Normal(0, ϵ), max(2 - abs(x), 0)) / pdf(Normal(0, ϵ), 0)
 		plot!(p1, x->smoothing_density(x, ϵ=ϵ), -4, 4, color=thepurple, lw=2)
 
@@ -349,7 +347,7 @@ begin
 		plot!(p2, rectangle(2, 2000, -4, 0), opacity=0.3, color=thered, label=false)
 		plot!(p2, rectangle(2, 2000, 2, 0), opacity=0.3, color=thered, label=false)
 
-		p3 = plot(pnom, -4, 4, legend=false, xlims=(-4, 4), ylims=(0, pnom(2.1) + 0.03), color=:indianred1, lw=5, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false)
+		p3 = plot(pnom, -4, 4, legend=false, xlims=(-4, 4), ylims=(0, pnom(2.1) + 0.03), color=:indianred1, lw=5, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false)
 		plot!(p3, x->smoothing_density(x, ϵ=ϵ), -4, 4, color=thepurple, lw=2)
 		failure_samples = filter(τ -> isfailure(ψ2, τ), τs)
 		failure_xs = [τ[1].s for τ in failure_samples]
