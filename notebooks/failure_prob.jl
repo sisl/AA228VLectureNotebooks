@@ -25,6 +25,10 @@ begin
 	using Plots
 	using Random
 	using PlutoPapers
+	using Printf
+	using LaTeXStrings
+	using BSON
+	using Base64
 
 	default(fontfamily="Computer Modern", framestyle=:box, guidefont="Computer Modern", legendfont=:white, foreground_color_legend=:white) # LaTeX-style plotting
 	theblue = RGB(128 / 255, 185 / 255, 255 / 255)
@@ -37,7 +41,7 @@ end;
 begin
 	presentation = PlutoPaper(
 		documentclass=Tufte(),
-		title="Algorithms for Validation: Failure Distribution",
+		title="Algorithms for Validation: Failure Probability Estimation",
 		authors=[
 			# Author(name="Lecture Introduction")
 			# Author(name="Mykel Kochenderfer")
@@ -53,26 +57,45 @@ end
 # ╔═╡ 19fb47bd-f479-4842-ad51-6f1af88c72f8
 title(presentation)
 
-# ╔═╡ 763e2587-81de-43b0-970b-511f7bdb48ba
-@section "Rejection Sampling"
+# ╔═╡ d0636784-ce42-4bae-93b8-3da85b7df3e3
+@section "Direct Estimation"
 
-# ╔═╡ fa1d2fee-cc41-48a1-8d78-148e545ac141
-@subsection "Nominal Trajectory Distribution Proposal"
+# ╔═╡ 3b8a023d-16f7-4987-8b3b-ed99d77e63c1
+@subsection "Maximum Likelihood Estimate"
 
-# ╔═╡ e920e116-40ae-4d48-a4b2-b6cad9e4fb2c
-@subsection "Hand-Designed Proposal Distribution"
+# ╔═╡ 16299665-778a-402b-aae9-4a7a007d8cec
+@subsection "Bayesian Estimate"
 
-# ╔═╡ b67b1441-e941-459c-91bb-94626129e9bb
-@section "Markov Chain Monte Carlo"
+# ╔═╡ ee23b7b4-afcd-44ed-a926-5b718b4b9847
+md"""
+What is the probability that the probability of failure is less than 0.01?
+"""
 
-# ╔═╡ 786415ef-e2ca-457b-8b00-2484ea68a6b6
-@subsection "Multiple Failure Modes"
+# ╔═╡ 1f037a1d-bf7e-4d8d-8f85-0ef9213300be
+md"""
+What value are we 95% confident that the probability of failure is less than?
+"""
 
-# ╔═╡ 44cb5a7e-edbe-47f1-9037-0fca6eac25d4
-@subsection "Smoothing"
+# ╔═╡ cd7544de-f94e-4a0a-ba8b-4c2613a68661
+@section "Importance Sampling"
 
-# ╔═╡ 6897d994-d460-474e-af03-2862b838965a
-@section "Pendulum"
+# ╔═╡ 946752eb-6ba1-4adc-aa59-a98d4b7862f5
+@subsection "Fitting a Proposal"
+
+# ╔═╡ 3af3855e-d6db-4580-8a10-4cda112a1bc3
+md"""
+First, draw samples from the failure distribution (e.g. using MCMC):
+"""
+
+# ╔═╡ 62685bbf-60f4-4c25-89c8-6fe976e8b015
+md"""
+Next, fit a distribution to these samples (e.g. a Gaussian distribution):
+"""
+
+# ╔═╡ 0be851b5-7017-4b40-96c3-434086bcdf81
+md"""
+Use the resulting distribution as the proposal distribution:
+"""
 
 # ╔═╡ 39b9a784-2c8b-46a2-a414-1252638ade67
 begin
@@ -103,86 +126,37 @@ begin
 	md"> _Backend_"
 end
 
-# ╔═╡ feb49231-60a7-40ed-aa93-cd80aec56589
+# ╔═╡ 2d4830a3-0081-4485-91e3-4a27e198dc2c
 md"""
- Threshold: $(@bind γ Slider(-3:0.1:-1, show_value=true, default=-1))
+Perception noise: $(@bind σ Slider(0.01:0.01:0.3, show_value=true, default=0.25))
 
- $m$: $(@bind m Slider(5:5:1000, show_value=true, default=50))
+Number of rollouts: $(@bind m Slider(1:1:150, show_value=true, default=50))
 """
 
-# ╔═╡ 57c4a43d-bdf5-4f19-9be5-4fc45538d131
-begin
-	function plot_rejection_sampling(p̄, q, c, n)
-		Random.seed!(4)
-		samples = rand(q, n)
-		Random.seed!(0)
-		αs = rand(n)
-		ys = αs .* pdf.(q, samples) .* c
-		accepted_inds = findall(ys .< p̄.(samples))
-		rejected_inds = findall(ys .>= p̄.(samples))
-
-		p1 = scatter(samples[accepted_inds], ys[accepted_inds], legend=false, xlims=(-4, 4), ylims=(0, 0.5), markercolor=thered, markerstrokecolor=thered, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false)
-		scatter!(p1, samples[rejected_inds], ys[rejected_inds], legend=false, markercolor=:lightgray, markerstrokecolor=:lightgray)
-		plot!(p1, x->c * pdf(q, x), -4, 4, color=:grey90, lw=5)
-		plot!(p1, p̄, -4, 4, color=:indianred1, lw=5)
-
-		p2 = plot(x->pdf(truncated(Normal(), upper=γ), x), -4, 4, legend=false, xlims=(-4, 4), ylims=(0, pdf(truncated(Normal(), upper=γ), γ) + 0.25), color=:indianred1, lw=5, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xlabel="τ")
-		histogram!(p2, samples[accepted_inds], bins=20, normalize=true, color=thered, alpha=0.8, linecolor=thered)
-
-		return plot(p1, p2, layout=(2, 1))
-	end
-
-	p̄(x) = x < γ ? pdf(Normal(), x) : 0
-	q = Normal()
-	plot_rejection_sampling(p̄, q, 1, m)
-end
-
-# ╔═╡ 91f3f891-bf54-4e5d-a9e7-9e1579500efa
+# ╔═╡ dbc6540a-80b9-4da5-8971-ae68fd8ccafe
 md"""
- $\mu$: $(@bind μ Slider(-3:0.1:0, show_value=true, default=0))
+xmax: $(@bind xmax Slider(0.01:0.01:1.0, show_value=true, default=1.0))
 
- $c$: $(@bind c Slider(0.00:0.025:1.0, show_value=true, default=1.0))
+ymax: $(@bind ymax Slider(0:1:100, show_value=true, default=100))
 """
 
-# ╔═╡ 783bf645-831b-4ddf-893a-ebe29e06ea15
-begin
-	qhd = Normal(μ, 1)
-	plot_rejection_sampling(p̄, qhd, c, m)
-end
-
-# ╔═╡ 9a63f3c7-3f6d-440e-a970-c4e1f2496028
+# ╔═╡ 7f9e81a1-194a-4d70-a6e9-eb390e3a54e0
 md"""
- Number of samples: $(@bind ns Slider(1:1:450, show_value=true, default=1))
+ Number of Samples: $(@bind mis Slider(10:10:1000, show_value=true, default=500))
+
+ Failure threshold: $(@bind γ Slider(-4:0.25:-1, show_value=true, default=-2))
+
+ $\mu$: $(@bind μ Slider(-5:0.1:0, show_value=true, default=0))
+
+ $\sigma$: $(@bind σi Slider(0.1:0.1:2.0, show_value=true, default=1.0))
 """
 
-# ╔═╡ 0848b64b-0397-4209-ba2e-7abec3ea624a
+# ╔═╡ 79906431-e878-4e24-bd06-06240f9f811f
 md"""
- Zoom in: $(@bind z CheckBox())
+ymax: $(@bind ym Slider(0:0.001:0.15, show_value=true, default=0.05))
 """
 
-# ╔═╡ 526bdef3-8d6d-421b-a0dd-716a2d11a705
-md"""
- Initial sample: $(@bind τ_init NumberField(-1.8:0.1:2, default=-2))
-
- Burn in: $(@bind m_burnin NumberField(1:10:50, default=1))
-"""
-
-# ╔═╡ 140d4337-feba-43ab-aa92-52067281aca1
-md"""
- Number of samples: $(@bind ns2 Slider(1:1:2000, show_value=true, default=1))
-"""
-
-# ╔═╡ 39feb11a-8959-4c25-8553-9667e7e9eb79
-md"""
- $\epsilon$: $(@bind ϵ Slider(0.05:0.05:0.5, show_value=true, default=0.05))
-"""
-
-# ╔═╡ 4aa64b86-fc3c-4ea4-879e-e01d87492f92
-md"""
- $\epsilon$: $(@bind ϵpend Slider(0.01:0.01:0.15, show_value=true, default=0.15))
-"""
-
-# ╔═╡ 770ff55b-7519-4207-9454-15ab53d0a3a4
+# ╔═╡ d1d6a030-c02c-484e-932d-8d5ada036055
 begin
 	struct SimpleGaussianTrajectoryDistribution <: TrajectoryDistribution
 	    μ
@@ -199,218 +173,202 @@ begin
 	end
 	StanfordAA228V.depth(p::SimpleGaussianTrajectoryDistribution) = 1
 
+	struct ImportanceSamplingEstimation
+	    p # nominal distribution
+	    q # proposal distribution
+	    m # number of samples
+	end
+	
+	struct DirectEstimation
+	    d # depth
+	    m # number of samples
+	end
+
+	function estimate_hist(alg::DirectEstimation, sys, γ)
+		d, m = alg.d, alg.m
+		samples = [rollout(sys, d=d) for i in 1:m]
+		ws = ones(m)
+		return samples, ws .* [τ[1].s < γ for τ in samples] #isfailure.(ψ, samples)
+	end
+
+	function estimate_hist(alg::ImportanceSamplingEstimation, sys, γ)
+		p, q, m = alg.p, alg.q, alg.m
+		samples = [rollout(sys, q) for i in 1:m]
+		ps = [pdf(p, τ) for τ in samples]
+		qs = [pdf(q, τ) for τ in samples]
+		ws = ps ./ qs
+		return samples, ws .* [τ[1].s < γ for τ in samples], ws
+	end
+	
+	md"> _Simple Gaussian Set Up_"
+end
+
+# ╔═╡ 09441084-4891-49ea-a8b0-a4ed6692c169
+begin
+	d = 1
+	mi = 1000
+	nruns = 10
+
+	agent1 = NoAgent()
+	env1 = SimpleGaussian()
+	sensor1 = IdealSensor()
+	simple_gaussian = System(agent1, env1, sensor1)
+
+	p = NominalTrajectoryDistribution(simple_gaussian)
+
+	Random.seed!(4)
+	prop = SimpleGaussianTrajectoryDistribution(0, 1)
+	alg_mc = ImportanceSamplingEstimation(p, prop, mi)
+	res_mc = [estimate_hist(alg_mc, simple_gaussian, γ) for i in 1:nruns]
+	hists_mc = [r[2] for r in res_mc]
+	τs_mc = res_mc[1][1]
+
+	Random.seed!(4)
+	proposal = SimpleGaussianTrajectoryDistribution(μ, σi)
+	alg_is = ImportanceSamplingEstimation(p, proposal, mi)
+	res_is = [estimate_hist(alg_is, simple_gaussian, γ) for i in 1:nruns]
+	hists_is = [r[2] for r in res_is]
+	τs_is = res_is[1][1]
+	ws = res_is[1][3]
+
+	Random.seed!(4)
+	# alg_is_fit = ImportanceSamplingEstimation(p, fit_proposal, mi)
+	# res_is_fit = [estimate_hist(alg_is_fit, simple_gaussian, γ) for i in 1:nruns]
+	# hists_is_fit = [r[2] for r in res_is_fit]
+	# τs_is_fit = res_is_fit[1][1]
+	# ws_fit = res_is_fit[1][3]
+	
+	md"> _Importance Sampling_"
+end
+
+# ╔═╡ 9e36e46e-80ba-4b5f-b944-ef30e09bb7e8
+begin
+	function plot_samples(τs, dist; ws=ones(length(τs)), title="", color=theblue, ymax=0.8)
+		𝐬 = [τ[1].s for τ in τs]
+		𝐬fail = filter(x->x<γ, 𝐬)
+		ysfail = [pdf(dist, s) for s in 𝐬fail]
+		inds_fail = findall(𝐬 .< γ)
+		ws_fail = max.(min.(ws[inds_fail], 4), 0.1)
+		𝐬succ= filter(x->x>γ, 𝐬)
+		yssucc = [pdf(dist, s) for s in 𝐬succ]
+		inds_succ = findall(𝐬 .> γ)
+		ws_succ = max.(min.(ws[inds_succ], 4), 0.1)
+		
+		p1 = plot()
+		plot!(p1, rectangle(abs(-4 - γ), ymax, -4, 0), color=thered, alpha=0.3)
+		plot!(p1, x->pdf(Normal(), x), -4, 4, lw=2, color=:gray)
+		plot!(p1, x->pdf(dist, x), -4, 4, lw=2, color=color)
+		scatter!(p1, 𝐬fail, ysfail, markersize=ws_fail.*7, legend=false, xlims=(-4, 4), ylims=(0, ymax), markercolor=:black, markerstrokecolor=thered, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false, alpha=0.8, title=title)
+		scatter!(p1, 𝐬succ, yssucc, markersize=ws_succ.*7, legend=false, xlims=(-4, 4), ylims=(0, ymax), markercolor=:black, markerstrokecolor=:white, xlabel="τ", alpha=0.8)
+	end
+
+	pa = plot_samples(τs_mc[1:mis], Normal(), title="Direct Estimation")
+	pb = plot_samples(τs_is[1:mis], Normal(μ, σi), ws=ws, title="Importance Sampling")
+	plot(pa, pb, size=(650, 275))
+end
+
+# ╔═╡ d93a40e7-c3ee-407f-ae86-c749042a17f0
+begin
+	function plot_estimation_error!(p, hists, color; ns=1000, ymax=ym, label="")
+		histmat = hcat(hists...)[1:ns, :]
+		true_prob = cdf(Normal(), γ)
+		plt_every=1
+    
+	    sums = cumsum(histmat, dims=1)
+	    estimates = sums ./ collect(1:size(histmat, 1))
+	    errors = abs.(estimates .- true_prob)
+	    lbs = [quantile(errors[i, :], 0.05) for i in 1:plt_every:size(histmat, 1)] .+ 1e-12
+	    ubs = [quantile(errors[i, :], 0.95) for i in 1:plt_every:size(histmat, 1)]
+	    μ = [mean(errors[i, :]) for i in 1:plt_every:size(histmat, 1)]
+
+		x_vals = collect(1:length(μ))
+		
+		plot!(p, x_vals, μ, color=color, lw=4, xlims=(1, ns), ylims=(0, ymax), grid=false, bg="transparent", background_color_inside=:black, fg="white", xlabel="Number of Samples", ylabel="Absolute Estimation Error", label=label)
+
+		plot!(p, x_vals, ubs, fill=(lbs, color), fillalpha=1.0, lw=0, label="")
+
+		plot!(p, [x_vals; reverse(x_vals)], [ubs; reverse(lbs)], 
+          fill=(0, color), fillalpha=0.5, lw=0, label="")
+	end
+
+	pl = plot(size=(650, 350))
+	plot_estimation_error!(pl, hists_mc, :white, ns=mis, label="Direct Estimation")
+	plot_estimation_error!(pl, hists_is, theblue, ns=mis, label="Importance Sampling")
+end
+
+# ╔═╡ 1b6bb492-36bd-48b2-9a6b-d83e1eab1040
+begin
 	struct MCMCSampling
-	    p̄        # target density
-	    g        # kernel: τ′ = rollout(sys, g(τ))
-	    τ        # initial trajectory
-	    k_max    # max iterations
-	    m_burnin # number of samples to discard from burn-in
-	    m_skip   # number of samples to skip for thinning
+		p̄        # target density
+		g        # kernel: τ′ = rollout(sys, g(τ))
+		τ        # initial trajectory
+		k_max    # max iterations
+		m_burnin # number of samples to discard from burn-in
+		m_skip   # number of samples to skip for thinning
 	end
 	
 	function sample_failures(alg::MCMCSampling, sys, ψ)
-	    p̄, g, τ = alg.p̄, alg.g, alg.τ
-	    k_max, m_burnin, m_skip = alg.k_max, alg.m_burnin, alg.m_skip
-	    τs = [τ]
+		p̄, g, τ = alg.p̄, alg.g, alg.τ
+		k_max, m_burnin, m_skip = alg.k_max, alg.m_burnin, alg.m_skip
+		τs = [τ]
 		τ′s = []
-	    for k in 1:k_max
-	        τ′ = rollout(sys, g(τ))
+		for k in 1:k_max
+			τ′ = rollout(sys, g(τ))
 			push!(τ′s, τ′)
-	        if rand() < (p̄(τ′) * pdf(g(τ′), τ)) / (p̄(τ) * pdf(g(τ), τ′))
-	            τ = τ′
-	        end
-	        push!(τs, τ)
-	    end
-	    return τs[m_burnin:m_skip:end], τ′s[m_burnin:m_skip:end]
+			if rand() < (p̄(τ′) * pdf(g(τ′), τ)) / (p̄(τ) * pdf(g(τ), τ′))
+				τ = τ′
+			end
+			push!(τs, τ)
+		end
+		return τs[m_burnin:m_skip:end]
 	end
 
-	agent = NoAgent()
-	env = SimpleGaussian()
-	sensor = IdealSensor()
-	sys = System(agent, env, sensor)
-	ψ = LTLSpecification(@formula □(s->s > -1));
-
+	ψ_simple_gaussian = LTLSpecification(@formula □(s->s > -2));
 	Random.seed!(1)
-	p = NominalTrajectoryDistribution(sys, 1)
-	p̄2 = τ -> isfailure(ψ, τ) * pdf(p, τ)
+	p̄ = τ -> isfailure(ψ_simple_gaussian, τ) * pdf(p, τ)
 	simple_gaussian_kernel(τ) = SimpleGaussianTrajectoryDistribution(τ[1].s, 1.0)
-	τ_initial = rollout(sys, τ_init, p)
+	τ_initial = rollout(simple_gaussian, -1.5, p)
 	# τ_initial = [(;s=1.0, a=0, o=0, x=Disturbance(0, 0, 0))]
 	k_max = 500
-	# m_burnin = 1
+	m_burnin = 1
 	m_skip = 1
-	
-	alg = MCMCSampling(p̄2, simple_gaussian_kernel, τ_initial, k_max, 1, m_skip)
-	τs, τ′s = sample_failures(alg, sys, ψ)
 
-	ψ2 = LTLSpecification(@formula □(s->abs(s) < 2))
-	p̄two = τ -> isfailure(ψ2, τ) * pdf(p, τ)
-	
-	alg2 = MCMCSampling(p̄two, simple_gaussian_kernel, rollout(sys, -2.1, p), 2000, 1, m_skip)
-	τs2, τ′s2 = sample_failures(alg2, sys, ψ2)
-
-	# ϵ₁ = 0.3
-	Random.seed!(1)
-	p̄s = τ -> pdf(Normal(0, ϵ), max(robustness([step.s for step in τ], ψ2.formula), 0)) * pdf(p, τ)
-	algs = MCMCSampling(p̄s, simple_gaussian_kernel, rollout(sys, -2.1, p), 2000, 1, m_skip)
-	τss, τ′ss = sample_failures(algs, sys, ψ2)
-	
 	md"> _MCMC_"
 end
 
-# ╔═╡ 03d47156-8c3b-43a1-bcfe-d06aff84ea7f
+# ╔═╡ 0cd26f21-5848-457a-9b4b-dd0888133d76
 begin
-	function plot_mcmc_sampling(τs, τ′s)
-		vals = [τ[1].s for τ in τs]
-		vp = [τ[1].s for τ in τ′s]
-		times = collect(1:length(τs))
-		ylims = z ? (0, 50) : (0, 400)
-		p1 = plot(vals, times, legend=false, ylims=ylims, xlims=(-4, 4), color=theblue, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false)
-		scatter!(p1, [vals[end]], [times[end]], markercolor=theblue, markerstrokecolor=theblue, markersize=6)
-		plot!(p1, rectangle(3, 400, -4, 0), opacity=0.3, color=thered, label=false)
-		if m_burnin > 1
-			plot!(p1, rectangle(8, m_burnin, -4, 0), opacity=0.7, color=:black, linecolor=:gray, label=false)
-		end
+	alg = MCMCSampling(p̄, simple_gaussian_kernel, τ_initial, k_max, m_burnin, m_skip)
+	τs_mcmc = sample_failures(alg, simple_gaussian, ψ_simple_gaussian)
+end;
 
-		p2 = plot()
-		plot!(p2, x->0.4*pdf(truncated(Normal(), upper=-1), x), -4, 4, color=:indianred1, alpha=0.5, lw=2)
-		plot!(p2, x->pdf(Normal(vals[end], 1), x), -4, 4, color=:lightgray, lw=2, legend=false, xlims=(-4, 4), ylims=(0, 0.8), grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=([vals[end], vp[end]], ["τ", "τ′"]))
-		scatter!(p2, [vals[end]], [0.01], markercolor=theblue, markerstrokecolor=theblue, markersize=5)
-		scatter!(p2, [vp[end]], [0.01], markercolor=:lightgray, markerstrokecolor=:lightgray, markersize=5)
-		plot!(p2, rectangle(3, 0.8, -4, 0), opacity=0.3, color=thered, label=false)
-
-		p3 = plot(x->pdf(truncated(Normal(), upper=-1), x), -4, 4, legend=false, xlims=(-4, 4), ylims=(0, pdf(truncated(Normal(), upper=γ), γ) + 0.25), color=:indianred1, lw=5, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xlabel="τ", size=(650, 350))
-		histogram!(p3, vals[m_burnin:end], bins=20, normalize=true, color=thered, alpha=0.8, linecolor=thered)
-
-		accept_prob = p̄2(τ′s[end]) / p̄2(τs[end])
-		p4 = plot(rectangle(0.2, min(accept_prob, 1.0), 0, 0), color=:gray, label=false, aspect_ratio=:equal, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false, ylims=(0, 1), xlims=(0, 0.2))
-
-		pblank = plot(aspect_ratio=:equal, grid=false, bg="transparent", fg="transparent", yticks=false, xticks=false, ylims=(0, 1), xlims=(0, 0.2), framestyle=:none)
-
-		l = @layout [grid(3, 2, widths=[0.93, 0.07])]
-		plot(p1, pblank, p2, p4, p3, pblank, layout=l, size=(650, 600))
-	end
-	
-	plot_mcmc_sampling(τs[1:ns], τ′s[1:ns])
+# ╔═╡ 36f0e5a2-586e-4351-84bd-c25d20d2ef05
+begin
+	𝐬 = [τ[1].s for τ in τs_mcmc]
+	dist_fit = fit(Normal, 𝐬)
 end
 
-# ╔═╡ c4eed575-ff97-4d69-8f9d-122d6e9aca45
+# ╔═╡ 1bd2e1e8-d57a-4894-9bf6-7a30b947a338
+fit_proposal = SimpleGaussianTrajectoryDistribution(dist_fit.μ, dist_fit.σ);
+
+# ╔═╡ 43daf5f4-02e7-411d-96d6-42806617783e
 begin
-	function plot_mm(τs, τ′s)
-		vals = [τ[1].s for τ in τs]
-		vp = [τ[1].s for τ in τ′s]
-		times = collect(1:length(τs))
-		ylims = z ? (0, 50) : (0, 2000)
-		p1 = plot(vals, times, legend=false, ylims=ylims, xlims=(-4, 4), color=theblue, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false)
-		scatter!(p1, [vals[end]], [times[end]], markercolor=theblue, markerstrokecolor=theblue, markersize=6)
-		plot!(p1, rectangle(2, 2000, -4, 0), opacity=0.3, color=thered, label=false)
-		plot!(p1, rectangle(2, 2000, 2, 0), opacity=0.3, color=thered, label=false)
-
-		pnom(x) = abs(x) > 2.0 ? pdf(Normal(), x) : 0.0
-		
-		p2 = plot()
-		plot!(p2,x->0.5 * pnom(x) / (2 * cdf(Normal(), -2)), -4, 4, color=:indianred1, alpha=0.5, lw=2)
-		plot!(p2, x->pdf(Normal(vals[end], 1), x), -4, 4, color=:lightgray, lw=2, legend=false, xlims=(-4, 4), ylims=(0, 0.8), grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=([vals[end], vp[end]], ["τ", "τ′"]))
-		scatter!(p2, [vals[end]], [0.01], markercolor=theblue, markerstrokecolor=theblue, markersize=5)
-		scatter!(p2, [vp[end]], [0.01], markercolor=:lightgray, markerstrokecolor=:lightgray, markersize=5)
-		plot!(p2, rectangle(2, 400, -4, 0), opacity=0.3, color=thered, label=false)
-		plot!(p2, rectangle(2, 400, 2, 0), opacity=0.3, color=thered, label=false)
-
-		p3 = plot(x->pnom(x) / (2 * cdf(Normal(), -2)), -4, 4, legend=false, xlims=(-4, 4), ylims=(0, pnom(2.1) /  (2 * cdf(Normal(), -2)) + 0.6), color=:indianred1, lw=5, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xlabel="τ", size=(650, 350))
-		histogram!(p3, vals, bins=20, normalize=true, color=thered, alpha=0.8, linecolor=thered)
-
-		accept_prob = p̄two(τ′s[end]) / p̄two(τs[end])
-		p4 = plot(rectangle(0.2, min(accept_prob, 1.0), 0, 0), color=:gray, label=false, aspect_ratio=:equal, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false, ylims=(0, 1), xlims=(0, 0.2))
-
-		pblank = plot(aspect_ratio=:equal, grid=false, bg="transparent", fg="transparent", yticks=false, xticks=false, ylims=(0, 1), xlims=(0, 0.2), framestyle=:none)
-
-		l = @layout [grid(3, 2, widths=[0.93, 0.07])]
-		plot(p1, pblank, p2, p4, p3, pblank, layout=l, size=(650, 600))
-	end
-	
-	plot_mm(τs2[1:ns2], τ′s2[1:ns2])
-end
-
-# ╔═╡ 1d4ba48d-5b7b-460b-b33a-c508f820a216
-begin
-	function plot_smoothed(τs)
-		pnom(x) = abs(x) > 2.0 ? pdf(Normal(), x) : 0.0
-		p1 = plot(pnom, -4, 4, legend=false, xlims=(-4, 4), ylims=(0, pnom(2.1) + 0.03), color=:indianred1, lw=5, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false)
-		smoothing_density(x; ϵ=0.1) = pdf(Normal(), x) * pdf(Normal(0, ϵ), max(2 - abs(x), 0)) / pdf(Normal(0, ϵ), 0)
-		plot!(p1, x->smoothing_density(x, ϵ=ϵ), -4, 4, color=thepurple, lw=2)
-
-		vals = [τ[1].s for τ in τs]
-		times = collect(1:length(τs))
-		ylims = z ? (0, 50) : (1400, 1600) #(0, 2000)
-		p2 = plot(vals, times, legend=false, ylims=ylims, xlims=(-4, 4), color=theblue, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false)
-		scatter!(p2, [vals[end]], [times[end]], markercolor=theblue, markerstrokecolor=theblue, markersize=6)
-		plot!(p2, rectangle(2, 2000, -4, 0), opacity=0.3, color=thered, label=false)
-		plot!(p2, rectangle(2, 2000, 2, 0), opacity=0.3, color=thered, label=false)
-
-		p3 = plot(pnom, -4, 4, legend=false, xlims=(-4, 4), ylims=(0, pnom(2.1) + 0.03), color=:indianred1, lw=5, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false)
-		plot!(p3, x->smoothing_density(x, ϵ=ϵ), -4, 4, color=thepurple, lw=2)
-		failure_samples = filter(τ -> isfailure(ψ2, τ), τs)
-		failure_xs = [τ[1].s for τ in failure_samples]
-		failure_ys = [rand() * smoothing_density((τ[1].s), ϵ=ϵ) for τ in failure_samples]
-		success_samples = filter(τ -> !isfailure(ψ2, τ), τs)
-		success_xs = [τ[1].s for τ in success_samples]
-		success_ys = [rand() * smoothing_density((τ[1].s), ϵ=ϵ) for τ in success_samples]
-		scatter!(p3, failure_xs, failure_ys, mc=thered, msc=thered, ms=1.5)
-		scatter!(p3, success_xs, success_ys, mc=thepurple, msc=thepurple, ms=1.5)
-
-		p4 = plot(x->pnom(x) / (2 * cdf(Normal(), -2)), -4, 4, legend=false, xlims=(-4, 4), ylims=(0, pnom(2.1) /  (2 * cdf(Normal(), -2)) + 0.6), color=:indianred1, lw=5, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xlabel="τ", size=(650, 350))
-		histogram!(p4, failure_xs, bins=80, normalize=true, color=thered, alpha=0.8, linecolor=thered)
-
-		return plot(p1, p2, p3, p4, layout=(4, 1), size=(500, 650))
-	end
-	
-	plot_smoothed(τss)
-end
-
-# ╔═╡ 5afdd3f9-affd-4fa4-b725-7574c32aa844
-begin
-	struct PendulumTrajectoryDistribution <: TrajectoryDistribution
-        μ₁
-        Σ₁
-        μs # vector of means of length d
-        Σs # vector of covariances of length d
-    end
-    function StanfordAA228V.initial_state_distribution(p::PendulumTrajectoryDistribution)
-        return MvNormal(p.μ₁, p.Σ₁) #Product([Uniform(-π / 16, π / 16), Uniform(-1., 1.)])
-    end
-    function StanfordAA228V.disturbance_distribution(p::PendulumTrajectoryDistribution, t)
-        D = DisturbanceDistribution((o) -> Deterministic(),
-                                    (s, a) -> Deterministic(),
-                                    (s) -> MvNormal(p.μs[t], p.Σs[t]))
-        return D
-    end
-    StanfordAA228V.depth(p::PendulumTrajectoryDistribution) = length(p.μs)
-
-	agent2 = ProportionalController([-15., -8.])
-	env2 = InvertedPendulum()
-	sensor2 = AdditiveNoiseSensor(MvNormal(zeros(2), (0.15)^2 * I))
-	inverted_pendulum = System(agent2, env2, sensor2)
-	ψp = LTLSpecification(@formula □(s -> abs(s[1]) < π / 4))
-
 	Random.seed!(4)
-	pp = NominalTrajectoryDistribution(inverted_pendulum, 21)
-	inverted_pendulum_kernel(τ; Σ₁=0.5^2 * I, Σ=0.05^2 * I) = PendulumTrajectoryDistribution(τ[1].s, Σ₁, [step.x.xo for step in τ], [Σ for step in τ])
-	global τ_in = rollout(inverted_pendulum, pp)
-	while !isfailure(ψp, τ_in)
-		global τ_in = rollout(inverted_pendulum, pp)
-	end
-	k_maxp = 50000
-	m_burninp = 1
-	m_skipp = 500
+	alg_is_fit = ImportanceSamplingEstimation(p, fit_proposal, mi)
+	res_is_fit = [estimate_hist(alg_is_fit, simple_gaussian, γ) for i in 1:nruns]
+	hists_is_fit = [r[2] for r in res_is_fit]
+	τs_is_fit = res_is_fit[1][1]
+	ws_fit = res_is_fit[1][3]
+end;
 
-	Random.seed!(4)
-	# τ_initial = rollout(inverted_pendulum, p)
-	# ϵp = 0.15
-	p̄p = τ -> pdf(Normal(0, ϵpend), max(robustness([step.s for step in τ], ψp.formula), 0)) * pdf(pp, τ)
-	algp = MCMCSampling(p̄p, inverted_pendulum_kernel, τ_in, k_maxp, m_burninp, m_skipp)
-	τsp, τs′p = sample_failures(algp, inverted_pendulum, ψp)
-	
-	md"> _Pendulum MCMC_"
+# ╔═╡ 7b37a30e-fec7-4854-a48e-b9eb036758e1
+begin
+	pl1 = plot_samples(τs_is_fit, Normal(dist_fit.μ, dist_fit.σ), ws=ws_fit, color=thepurple, ymax=1.5)
+	pll = plot(size=(650, 350))
+	plot_estimation_error!(pll, hists_mc, :white, ns=140, label="Direct Estimation")
+	plot_estimation_error!(pll, hists_is_fit, thepurple, ns=140, label="Fit Proposal")
+
+	pl2 = plot(pll, pl1, size=(650, 350))
 end
 
 # ╔═╡ 06edfbee-5d16-4e83-a4f9-caf5bd901c00
@@ -418,6 +376,16 @@ end
 
 # ╔═╡ f58a6427-a0f5-4a0b-ac01-6f017d12bcc7
 begin
+	sys = System(
+		ProportionalController([-15.0, -8.0]),
+		InvertedPendulum(),
+		AdditiveNoiseSensor(MvNormal(zeros(2), σ^2*I))
+	)
+
+	ψ = LTLSpecification(@formula □(s -> abs(s[1]) < π / 4))
+
+	simulate(m) = [rollout(sys, d=41) for i in 1:m]
+	
 	function plot_it(sys, ψ, τ=missing;
 					is_dark_mode=dark_mode,
 					title="Inverted Pendulum",
@@ -444,7 +412,7 @@ begin
 		xlabel!(p, "Time (s)")
 		ylabel!(p, "𝜃 (rad)")
 		title!(p, title)
-		xlims!(p, 0, 1)
+		xlims!(p, 0, 2)
 		ylims!(p, -1.2, 1.2)
 		# StanfordAA228V.set_aspect_ratio!(p)
 	
@@ -491,8 +459,64 @@ begin
 	md"> _Pendulum Plotting_"
 end
 
-# ╔═╡ ceaa55b6-cc62-4dda-9970-8b23ecb6a27d
-plot_both(inverted_pendulum, ψp, τsp)
+# ╔═╡ 4281219b-64e8-475f-a49f-1695e3965735
+begin
+	Random.seed!(0)
+	τs = simulate(m)
+	nfail = sum(isfailure(ψ, τ) for τ in τs)
+	failurestring = nfail == 1 ? "failure" : "failures"
+	trajstring = m == 1 ? "trajectory" : "trajectories"
+
+	md"> _Simulation Code_"
+end
+
+# ╔═╡ fa3494a9-cdcc-4189-99fa-00b2d823736f
+begin
+	posterior = Beta(1 + nfail, 1 + m - nfail)
+	fg = dark_mode ? "white" : "black"
+	xspost = collect(range(0, 1, length=201))
+	yspost = pdf.(posterior, xspost)
+	plo = plot(xspost, yspost, xlims=(0,1), ylims=(0,22), legend=false,
+	lw=2, c=theblue, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg=fg, xlabel="\$\\theta\$", ylabel="\$P(\\theta \\mid D)\$", size=(300, 300), title="Beta($(Int(posterior.α)), $(Int(posterior.β)))")
+end
+
+# ╔═╡ 5a381b38-9b53-4b3b-992f-a6c1ac752c90
+cdf(posterior, 0.01)
+
+# ╔═╡ 12ce848c-8150-4243-8065-b2a91a840240
+begin
+	xshade = collect(range(0, stop=0.01, length=100))
+	yshade = pdf.(posterior, xshade)
+	xsp = collect(range(0, xmax, length=201))
+	ysp = pdf.(posterior, xsp)
+	ploo = plot(xsp, ysp, xlims=(0,xmax), ylims=(0,ymax), legend=false,
+	lw=2, c=theblue, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg=fg, xlabel="\$\\theta\$", ylabel="\$P(\\theta \\mid D)\$", size=(300, 300), title="Beta($(Int(posterior.α)), $(Int(posterior.β)))")
+	plot!(ploo, xshade, yshade, fill=(0, theblue, 0.3), lw=0)
+end
+
+# ╔═╡ 9568bfc4-c19b-4529-8af5-0e7c7181ed02
+quantile(posterior, 0.95)
+
+# ╔═╡ 90f6250e-6721-4a4e-8a8e-d04c65d9b520
+begin
+	xshade2 = collect(range(0, quantile(posterior, 0.95), length=100))
+	yshade2 = pdf.(posterior, xshade2)
+	plopo = plot(xsp, ysp, xlims=(0,xmax), ylims=(0,ymax), legend=false,
+	lw=2, c=theblue, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg=fg, xlabel="\$\\theta\$", ylabel="\$P(\\theta \\mid D)\$", size=(300, 300), title="Beta($(Int(posterior.α)), $(Int(posterior.β)))")
+	plot!(plopo, xshade2, yshade2, fill=(0, theblue, 0.3), lw=0)
+end
+
+# ╔═╡ f1598110-c482-4d37-95a4-f68d886498d6
+begin
+	p1 = plot_it(sys, ψ, τs)
+	result = round(nfail / m, digits=3)
+	text_str = L"p_\mathrm{fail} = \frac{%$(nfail)}{%$m} = %$result"
+	p2 = plot(; xlims=(0, 1), ylims=(0, 1), framestyle=:none, axis=false)
+	annotate!(p2, 0.5, 0.5, text(text_str, 12, :white))
+	annotate!(p2, 0.5, 0.7, text("Maximum Likelihood Estimate", 12, :white))
+
+	plot(p1, p2, size=(650, 350))
+end
 
 # ╔═╡ bb3d0fe1-d1c6-47ef-bec4-82c1ace1c6ed
 toc()
@@ -500,16 +524,22 @@ toc()
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
+BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
+Base64 = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoPapers = "d3cde879-03ee-4818-9d5f-9ea6cf0edfee"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 StanfordAA228V = "6f6e590e-f8c2-4a21-9268-94576b9fb3b1"
 
 [compat]
+BSON = "~0.3.9"
 Distributions = "~0.25.117"
+LaTeXStrings = "~1.4.0"
 Plots = "~1.40.9"
 PlutoPapers = "~0.1.0"
 PlutoUI = "~0.7.61"
@@ -522,7 +552,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.11.1"
 manifest_format = "2.0"
-project_hash = "4819372a2e0f9affd25e1da77a3a76c037ca9635"
+project_hash = "12cedd987c277d640401e8f9b37b9b86a6ee05fb"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -2497,31 +2527,39 @@ version = "1.4.1+2"
 # ╔═╡ Cell order:
 # ╟─2f308228-2806-4bdf-b7df-e000c6eb277a
 # ╟─19fb47bd-f479-4842-ad51-6f1af88c72f8
-# ╟─763e2587-81de-43b0-970b-511f7bdb48ba
-# ╟─fa1d2fee-cc41-48a1-8d78-148e545ac141
-# ╟─57c4a43d-bdf5-4f19-9be5-4fc45538d131
-# ╟─feb49231-60a7-40ed-aa93-cd80aec56589
-# ╟─e920e116-40ae-4d48-a4b2-b6cad9e4fb2c
-# ╟─91f3f891-bf54-4e5d-a9e7-9e1579500efa
-# ╟─783bf645-831b-4ddf-893a-ebe29e06ea15
-# ╟─b67b1441-e941-459c-91bb-94626129e9bb
-# ╟─9a63f3c7-3f6d-440e-a970-c4e1f2496028
-# ╟─0848b64b-0397-4209-ba2e-7abec3ea624a
-# ╟─03d47156-8c3b-43a1-bcfe-d06aff84ea7f
-# ╟─526bdef3-8d6d-421b-a0dd-716a2d11a705
-# ╟─786415ef-e2ca-457b-8b00-2484ea68a6b6
-# ╟─140d4337-feba-43ab-aa92-52067281aca1
-# ╟─c4eed575-ff97-4d69-8f9d-122d6e9aca45
-# ╟─44cb5a7e-edbe-47f1-9037-0fca6eac25d4
-# ╟─39feb11a-8959-4c25-8553-9667e7e9eb79
-# ╟─1d4ba48d-5b7b-460b-b33a-c508f820a216
-# ╟─6897d994-d460-474e-af03-2862b838965a
-# ╟─4aa64b86-fc3c-4ea4-879e-e01d87492f92
-# ╟─ceaa55b6-cc62-4dda-9970-8b23ecb6a27d
+# ╟─d0636784-ce42-4bae-93b8-3da85b7df3e3
+# ╟─4281219b-64e8-475f-a49f-1695e3965735
+# ╟─3b8a023d-16f7-4987-8b3b-ed99d77e63c1
+# ╟─f1598110-c482-4d37-95a4-f68d886498d6
+# ╟─2d4830a3-0081-4485-91e3-4a27e198dc2c
+# ╟─16299665-778a-402b-aae9-4a7a007d8cec
+# ╟─fa3494a9-cdcc-4189-99fa-00b2d823736f
+# ╟─ee23b7b4-afcd-44ed-a926-5b718b4b9847
+# ╠═5a381b38-9b53-4b3b-992f-a6c1ac752c90
+# ╟─12ce848c-8150-4243-8065-b2a91a840240
+# ╟─dbc6540a-80b9-4da5-8971-ae68fd8ccafe
+# ╟─1f037a1d-bf7e-4d8d-8f85-0ef9213300be
+# ╠═9568bfc4-c19b-4529-8af5-0e7c7181ed02
+# ╟─90f6250e-6721-4a4e-8a8e-d04c65d9b520
+# ╟─cd7544de-f94e-4a0a-ba8b-4c2613a68661
+# ╟─7f9e81a1-194a-4d70-a6e9-eb390e3a54e0
+# ╟─9e36e46e-80ba-4b5f-b944-ef30e09bb7e8
+# ╟─d93a40e7-c3ee-407f-ae86-c749042a17f0
+# ╟─79906431-e878-4e24-bd06-06240f9f811f
+# ╟─946752eb-6ba1-4adc-aa59-a98d4b7862f5
+# ╟─3af3855e-d6db-4580-8a10-4cda112a1bc3
+# ╠═0cd26f21-5848-457a-9b4b-dd0888133d76
+# ╟─62685bbf-60f4-4c25-89c8-6fe976e8b015
+# ╠═36f0e5a2-586e-4351-84bd-c25d20d2ef05
+# ╟─0be851b5-7017-4b40-96c3-434086bcdf81
+# ╠═1bd2e1e8-d57a-4894-9bf6-7a30b947a338
+# ╟─43daf5f4-02e7-411d-96d6-42806617783e
+# ╟─7b37a30e-fec7-4854-a48e-b9eb036758e1
 # ╟─39b9a784-2c8b-46a2-a414-1252638ade67
-# ╠═770ff55b-7519-4207-9454-15ab53d0a3a4
-# ╟─5afdd3f9-affd-4fa4-b725-7574c32aa844
 # ╟─f58a6427-a0f5-4a0b-ac01-6f017d12bcc7
+# ╟─d1d6a030-c02c-484e-932d-8d5ada036055
+# ╠═09441084-4891-49ea-a8b0-a4ed6692c169
+# ╟─1b6bb492-36bd-48b2-9a6b-d83e1eab1040
 # ╟─480491fb-9f19-49ee-8f0f-0bd8c1c352d8
 # ╟─06edfbee-5d16-4e83-a4f9-caf5bd901c00
 # ╟─bb3d0fe1-d1c6-47ef-bec4-82c1ace1c6ed
