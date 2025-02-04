@@ -290,7 +290,7 @@ end
 
 # ╔═╡ 9e36e46e-80ba-4b5f-b944-ef30e09bb7e8
 begin
-	function plot_samples(τs, dist; ws=ones(length(τs)), title="", color=theblue, ymax=0.8)
+	function plot_samples(τs, dist; ws=ones(length(τs)), title="", color=theblue, ymax=0.8, failure_dist=false)
 		𝐬 = [τ[1].s for τ in τs]
 		ys = [pdf(dist, s) for s in 𝐬]
 		𝐬fail = filter(x->x<γ, 𝐬)
@@ -306,6 +306,9 @@ begin
 		
 		p1 = plot()
 		plot!(p1, rectangle(abs(-4 - γ), ymax, -4, 0), color=thered, alpha=0.3)
+		if failure_dist
+			plot!(p1, x->pdf(Truncated(Normal(), -Inf, γ), x), -4, 4, lw=1.5, color=:indianred1)
+		end
 		plot!(p1, x->pdf(Normal(), x), -4, 4, lw=2, color=:gray)
 		plot!(p1, x->pdf(dist, x), -4, 4, lw=2, color=color)
 		scatter!(p1, 𝐬fail, ysfail, marker_z=ws_fail_norm, xlims=(-4, 4), ylims=(0, ymax), grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false, alpha=0.6, title=title, legend=false, color=:viridis, msw=0, ms=3)#, clim=(0,2))
@@ -319,8 +322,11 @@ begin
 	pa, essa = plot_samples(τs_mc[1:mis], Normal(), title="Direct Estimation")
 	pb, essb = plot_samples(τs_is[1:mis], Normal(μ, σi), ws=ws, title="Importance Sampling")
 
-	pc = plot(rectangle(20, min(essb, 500), 0, 0), color=theblue, legend=false, aspect_ratio=:equal, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false, ylims=(0, 500), xlims=(0, 20), title="ESS", alpha=0.75)
-	plot!(pc, rectangle(20, min(essa, 500), 0, 0), color=:gray)
+	nfail_is = sum([τ[1].s .< γ for τ in τs_is[1:mis]])
+	
+	pc = plot(rectangle(40, min(essb, 500), 0, 0), color=theblue, legend=false, aspect_ratio=:equal, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false, ylims=(0, 500), xlims=(0, 40), title="ESS", alpha=0.75)
+	plot!(pc, rectangle(40, min(essa, 500), 0, 0), color=:gray)
+	plot!(pc, x->nfail_is, 0, 40, color=theblue, lw=3)
 
 	l = @layout [grid(1, 3, widths=[0.45, 0.45, 0.1])]
 	
@@ -435,7 +441,7 @@ end;
 
 # ╔═╡ 7b37a30e-fec7-4854-a48e-b9eb036758e1
 begin
-	pl1, _ = plot_samples(τs_is_fit, Normal(dist_fit.μ, dist_fit.σ), ws=ws_fit, color=thepurple, ymax=1.5)
+	pl1, _ = plot_samples(τs_is_fit, Normal(dist_fit.μ, dist_fit.σ), ws=ws_fit, color=thepurple, ymax=1.5, failure_dist=true)
 	pll = plot(size=(650, 350))
 	plot_estimation_error!(pll, hists_mc, :white, ns=140, label="Direct Estimation")
 	plot_estimation_error!(pll, hists_is_fit, thepurple, ns=140, label="Fit Proposal")
