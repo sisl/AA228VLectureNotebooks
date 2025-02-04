@@ -341,7 +341,7 @@ begin
 
 		vals = [τ[1].s for τ in τs]
 		times = collect(1:length(τs))
-		ylims = z ? (0, 50) : (1400, 1600) #(0, 2000)
+		ylims = z ? (0, 50) : (0, 2000)
 		p2 = plot(vals, times, legend=false, ylims=ylims, xlims=(-4, 4), color=theblue, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false)
 		scatter!(p2, [vals[end]], [times[end]], markercolor=theblue, markerstrokecolor=theblue, markersize=6)
 		plot!(p2, rectangle(2, 2000, -4, 0), opacity=0.3, color=thered, label=false)
@@ -483,7 +483,7 @@ begin
 					is_dark_mode=dark_mode,
 					title="Inverted Pendulum",
 					max_lines=100, size=(680,350))
-		p1 = plot_it(sys, ψ, τ, is_dark_mode=dark_mode, title="Falsification", max_lines=max_lines, size=size)
+		p1 = plot_it(sys, ψ, τ, is_dark_mode=dark_mode, title="Smoothed Distribution", max_lines=max_lines, size=size)
 		p2 = plot_it(sys, ψ, τ, is_dark_mode=dark_mode, title="Failure Distribution", max_lines=max_lines, size=size, plot_successes=false)
 		return plot(p1, p2)
 	end
