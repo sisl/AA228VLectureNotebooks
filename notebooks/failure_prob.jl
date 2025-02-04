@@ -29,6 +29,7 @@ begin
 	using LaTeXStrings
 	using BSON
 	using Base64
+	using StatsBase
 
 	default(fontfamily="Computer Modern", framestyle=:box, guidefont="Computer Modern", legendfont=:white, foreground_color_legend=:white) # LaTeX-style plotting
 	theblue = RGB(128 / 255, 185 / 255, 255 / 255)
@@ -97,6 +98,12 @@ md"""
 Use the resulting distribution as the proposal distribution:
 """
 
+# ╔═╡ c9f2eb66-e20c-4dc3-ae52-10d27c44f1ee
+@section "Adaptive Importance Sampling Estimation"
+
+# ╔═╡ 18347b9e-cc0d-424a-875c-c4714a9d52e0
+sample_dist = Normal(0, 1);
+
 # ╔═╡ 39b9a784-2c8b-46a2-a414-1252638ade67
 begin
 	Bonds = PlutoUI.BuiltinsNotebook.AbstractPlutoDingetjes.Bonds
@@ -155,6 +162,42 @@ md"""
 md"""
 ymax: $(@bind ym Slider(0:0.001:0.15, show_value=true, default=0.05))
 """
+
+# ╔═╡ 9246a06d-8fd0-4a92-b3f7-3fdd9ca821ae
+md"""
+ Number of Samples: $(@bind mfit Slider(10:10:1000, show_value=true, default=500))
+
+ Failure threshold: $(@bind γ2 Slider(-4:0.25:-2, show_value=true, default=-2))
+"""
+
+# ╔═╡ 790bc106-244d-4b77-9d60-505424c69779
+begin
+	Random.seed!(4)
+	samples = rand(sample_dist, mfit)
+end;
+
+# ╔═╡ 49c97ae9-54fa-4017-8286-672c9a5e344b
+md"""
+ Use weights for fit: $(@bind use_weights CheckBox())
+"""
+
+# ╔═╡ d2119119-98e4-4425-b042-004fb0dab42f
+begin
+	wah = false
+	if use_weights
+		ws_fitting = [(pdf(Normal(), s) * (s < γ2)) / pdf(sample_dist, s) for s in samples]
+	else
+		ws_fitting = ones(mfit)
+	end
+	if sum(ws_fitting) > 0
+		μfitting = mean(samples, fweights(ws_fitting))
+		σfitting = std(samples, fweights(ws_fitting))
+	else
+		wah = true
+		μfitting = 0
+		σfitting = 1
+	end
+end;
 
 # ╔═╡ d1d6a030-c02c-484e-932d-8d5ada036055
 begin
@@ -224,6 +267,10 @@ begin
 	τs_mc = res_mc[1][1]
 
 	Random.seed!(4)
+	res_mc2 = [estimate_hist(alg_mc, simple_gaussian, γ2) for i in 1:nruns]
+	hists_mc2 = [r[2] for r in res_mc2]
+
+	Random.seed!(4)
 	proposal = SimpleGaussianTrajectoryDistribution(μ, σi)
 	alg_is = ImportanceSamplingEstimation(p, proposal, mi)
 	res_is = [estimate_hist(alg_is, simple_gaussian, γ) for i in 1:nruns]
@@ -245,10 +292,13 @@ end
 begin
 	function plot_samples(τs, dist; ws=ones(length(τs)), title="", color=theblue, ymax=0.8)
 		𝐬 = [τ[1].s for τ in τs]
+		ys = [pdf(dist, s) for s in 𝐬]
 		𝐬fail = filter(x->x<γ, 𝐬)
 		ysfail = [pdf(dist, s) for s in 𝐬fail]
 		inds_fail = findall(𝐬 .< γ)
-		ws_fail = max.(min.(ws[inds_fail], 4), 0.1)
+		# ws_fail = max.(min.(ws[inds_fail], 4), 0.1)
+		ws_fail = ws[inds_fail]
+		ws_fail_norm = (ws_fail/sum(ws_fail)) * length(ws_fail)
 		𝐬succ= filter(x->x>γ, 𝐬)
 		yssucc = [pdf(dist, s) for s in 𝐬succ]
 		inds_succ = findall(𝐬 .> γ)
@@ -258,18 +308,28 @@ begin
 		plot!(p1, rectangle(abs(-4 - γ), ymax, -4, 0), color=thered, alpha=0.3)
 		plot!(p1, x->pdf(Normal(), x), -4, 4, lw=2, color=:gray)
 		plot!(p1, x->pdf(dist, x), -4, 4, lw=2, color=color)
-		scatter!(p1, 𝐬fail, ysfail, markersize=ws_fail.*7, legend=false, xlims=(-4, 4), ylims=(0, ymax), markercolor=:black, markerstrokecolor=thered, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false, alpha=0.8, title=title)
-		scatter!(p1, 𝐬succ, yssucc, markersize=ws_succ.*7, legend=false, xlims=(-4, 4), ylims=(0, ymax), markercolor=:black, markerstrokecolor=:white, xlabel="τ", alpha=0.8)
+		scatter!(p1, 𝐬fail, ysfail, marker_z=ws_fail_norm, xlims=(-4, 4), ylims=(0, ymax), grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false, alpha=0.6, title=title, legend=false, color=:viridis, msw=0, ms=3)#, clim=(0,2))
+		# scatter!(p1, 𝐬fail, ysfail, markersize=ws_fail.*7, legend=false, xlims=(-4, 4), ylims=(0, ymax), markercolor=:black, markerstrokecolor=thered, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false, alpha=0.8, title=title)
+		scatter!(p1, 𝐬succ, yssucc, markersize=3, legend=false, xlims=(-4, 4), ylims=(0, ymax), markercolor=:black, markerstrokecolor=:gray, xlabel="τ", alpha=1.0)
+
+		ess = 1 / sum((ws_fail ./ sum(ws_fail)).^2)
+		return p1, ess
 	end
 
-	pa = plot_samples(τs_mc[1:mis], Normal(), title="Direct Estimation")
-	pb = plot_samples(τs_is[1:mis], Normal(μ, σi), ws=ws, title="Importance Sampling")
-	plot(pa, pb, size=(650, 275))
+	pa, essa = plot_samples(τs_mc[1:mis], Normal(), title="Direct Estimation")
+	pb, essb = plot_samples(τs_is[1:mis], Normal(μ, σi), ws=ws, title="Importance Sampling")
+
+	pc = plot(rectangle(20, min(essb, 500), 0, 0), color=theblue, legend=false, aspect_ratio=:equal, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false, ylims=(0, 500), xlims=(0, 20), title="ESS", alpha=0.75)
+	plot!(pc, rectangle(20, min(essa, 500), 0, 0), color=:gray)
+
+	l = @layout [grid(1, 3, widths=[0.45, 0.45, 0.1])]
+	
+	plot(pa, pb, pc, layout=l, size=(650, 275))
 end
 
 # ╔═╡ d93a40e7-c3ee-407f-ae86-c749042a17f0
 begin
-	function plot_estimation_error!(p, hists, color; ns=1000, ymax=ym, label="")
+	function plot_estimation_error!(p, hists, color; ns=1000, ymax=ym, label="", γ=γ)
 		histmat = hcat(hists...)[1:ns, :]
 		true_prob = cdf(Normal(), γ)
 		plt_every=1
@@ -295,6 +355,18 @@ begin
 	plot_estimation_error!(pl, hists_mc, :white, ns=mis, label="Direct Estimation")
 	plot_estimation_error!(pl, hists_is, theblue, ns=mis, label="Importance Sampling")
 end
+
+# ╔═╡ b165e3c6-7b72-4513-a2a6-cd55c73a9ce7
+begin
+	Random.seed!(4)
+	if !wah
+		alg_is_fitt = ImportanceSamplingEstimation(p, SimpleGaussianTrajectoryDistribution(μfitting, σfitting), mi)
+		res_is_fitt = [estimate_hist(alg_is_fitt, simple_gaussian, γ2) for i in 1:nruns]
+		hists_is_fitt = [r[2] for r in res_is_fitt]
+		τs_is_fitt = res_is_fitt[1][1]
+		ws_fitt = res_is_fitt[1][3]
+	end
+end;
 
 # ╔═╡ 1b6bb492-36bd-48b2-9a6b-d83e1eab1040
 begin
@@ -363,7 +435,7 @@ end;
 
 # ╔═╡ 7b37a30e-fec7-4854-a48e-b9eb036758e1
 begin
-	pl1 = plot_samples(τs_is_fit, Normal(dist_fit.μ, dist_fit.σ), ws=ws_fit, color=thepurple, ymax=1.5)
+	pl1, _ = plot_samples(τs_is_fit, Normal(dist_fit.μ, dist_fit.σ), ws=ws_fit, color=thepurple, ymax=1.5)
 	pll = plot(size=(650, 350))
 	plot_estimation_error!(pll, hists_mc, :white, ns=140, label="Direct Estimation")
 	plot_estimation_error!(pll, hists_is_fit, thepurple, ns=140, label="Fit Proposal")
@@ -506,6 +578,50 @@ begin
 	plot!(plopo, xshade2, yshade2, fill=(0, theblue, 0.3), lw=0)
 end
 
+# ╔═╡ 93b6bab4-17d0-44bf-ba28-a1423da89bbc
+begin
+	function plot_samples_fit(𝐬, dist, dist_fit; ws=ones(length(τs)), title="", color=theblue, ymax=0.8)
+		# 𝐬 = [τ[1].s for τ in τs]
+		ys = zeros(length(𝐬)) #[pdf(dist, s) for s in 𝐬]
+		𝐬fail = filter(x->x<γ2, 𝐬)
+		ysfail = [0.02 for s in 𝐬fail] #[pdf(dist, s) for s in 𝐬fail]
+		inds_fail = findall(𝐬 .< γ2)
+		# ws_fail = max.(min.(ws[inds_fail], 4), 0.1)
+		ws_fail = pdf.(Normal(), 𝐬fail) / pdf.(dist, 𝐬fail)
+		𝐬succ= filter(x->x>γ2, 𝐬)
+		yssucc = [0.02 for s in 𝐬succ] #[pdf(dist, s) for s in 𝐬succ]
+		inds_succ = findall(𝐬 .> γ2)
+		# ws_succ = max.(min.(ws[inds_succ], 4), 0.1)
+		
+		p1 = plot()
+		plot!(p1, rectangle(abs(-4 - γ2), ymax, -4, 0), color=thered, alpha=0.3)
+		plot!(p1, x->pdf(Normal(), x), -4, 4, lw=2, color=:gray)
+		plot!(p1, x->pdf(dist, x), -4, 4, lw=2, color=color)
+		if !wah
+			plot!(p1, x->pdf(dist_fit, x), -4, 4, lw=2, color=thepurple)
+		else
+			annotate!(p1, 0, 0.6, text("Ahhhhhh!!!", 16, thepurple))
+		end
+		if use_weights && !wah
+			scatter!(p1, 𝐬fail, ysfail, marker_z=ws_fail, xlims=(-4, 4), ylims=(0, ymax), grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false, alpha=0.8, title=title, legend=false, color=:viridis, msw=0, ms=4, colorbar=false)
+		else
+			scatter!(p1, 𝐬fail, ysfail, xlims=(-4, 4), ylims=(0, ymax), grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false, alpha=0.8, title=title, legend=false,  markercolor=:black, markerstrokecolor=:white, ms=4, colorbar=false)
+		end
+		scatter!(p1, 𝐬succ, yssucc, markersize=4, legend=false, xlims=(-4, 4), ylims=(0, ymax), markercolor=:black, markerstrokecolor=:white, xlabel="τ", alpha=1.0)
+	
+		return p1
+	end
+	
+	pi = plot_samples_fit(samples, sample_dist, Normal(μfitting, σfitting), ymax=1.3)
+	pii = plot()
+	plot_estimation_error!(pii, hists_mc2, :white, ns=140, label="Direct Estimation", γ=γ2, ymax=2 * cdf(Normal(), γ2))
+	if !wah
+		plot_estimation_error!(pii, hists_is_fitt, thepurple, ns=140, label="Fit Proposal", γ=γ2)
+	end
+
+	plot(pii, pi, size=(650, 350))
+end
+
 # ╔═╡ f1598110-c482-4d37-95a4-f68d886498d6
 begin
 	p1 = plot_it(sys, ψ, τs)
@@ -535,6 +651,7 @@ PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 StanfordAA228V = "6f6e590e-f8c2-4a21-9268-94576b9fb3b1"
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 
 [compat]
 BSON = "~0.3.9"
@@ -544,6 +661,7 @@ Plots = "~1.40.9"
 PlutoPapers = "~0.1.0"
 PlutoUI = "~0.7.61"
 StanfordAA228V = "~0.1.23"
+StatsBase = "~0.34.4"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -552,7 +670,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.11.1"
 manifest_format = "2.0"
-project_hash = "12cedd987c277d640401e8f9b37b9b86a6ee05fb"
+project_hash = "403ca32dce44da496d62d23d1448ed23adeb28f1"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -2555,10 +2673,18 @@ version = "1.4.1+2"
 # ╠═1bd2e1e8-d57a-4894-9bf6-7a30b947a338
 # ╟─43daf5f4-02e7-411d-96d6-42806617783e
 # ╟─7b37a30e-fec7-4854-a48e-b9eb036758e1
+# ╟─c9f2eb66-e20c-4dc3-ae52-10d27c44f1ee
+# ╟─18347b9e-cc0d-424a-875c-c4714a9d52e0
+# ╟─d2119119-98e4-4425-b042-004fb0dab42f
+# ╟─790bc106-244d-4b77-9d60-505424c69779
+# ╟─b165e3c6-7b72-4513-a2a6-cd55c73a9ce7
+# ╟─9246a06d-8fd0-4a92-b3f7-3fdd9ca821ae
+# ╟─49c97ae9-54fa-4017-8286-672c9a5e344b
+# ╟─93b6bab4-17d0-44bf-ba28-a1423da89bbc
 # ╟─39b9a784-2c8b-46a2-a414-1252638ade67
 # ╟─f58a6427-a0f5-4a0b-ac01-6f017d12bcc7
 # ╟─d1d6a030-c02c-484e-932d-8d5ada036055
-# ╠═09441084-4891-49ea-a8b0-a4ed6692c169
+# ╟─09441084-4891-49ea-a8b0-a4ed6692c169
 # ╟─1b6bb492-36bd-48b2-9a6b-d83e1eab1040
 # ╟─480491fb-9f19-49ee-8f0f-0bd8c1c352d8
 # ╟─06edfbee-5d16-4e83-a4f9-caf5bd901c00
