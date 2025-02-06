@@ -25,11 +25,6 @@ begin
 	using Plots
 	using Random
 	using PlutoPapers
-	using Printf
-	using LaTeXStrings
-	using BSON
-	using Base64
-	using StatsBase
 
 	default(fontfamily="Computer Modern", framestyle=:box, guidefont="Computer Modern", legendfont=:white, foreground_color_legend=:white) # LaTeX-style plotting
 	theblue = RGB(128 / 255, 185 / 255, 255 / 255)
@@ -42,7 +37,7 @@ end;
 begin
 	presentation = PlutoPaper(
 		documentclass=Tufte(),
-		title="Algorithms for Validation: Failure Probability Estimation",
+		title="Algorithms for Validation: Sequential Monte Carlo",
 		authors=[
 			# Author(name="Lecture Introduction")
 			# Author(name="Mykel Kochenderfer")
@@ -58,51 +53,30 @@ end
 # ╔═╡ 19fb47bd-f479-4842-ad51-6f1af88c72f8
 title(presentation)
 
-# ╔═╡ d0636784-ce42-4bae-93b8-3da85b7df3e3
-@section "Direct Estimation"
+# ╔═╡ 8c585f15-f466-4749-8b22-3c02b2714762
+@section "Intermediate Distributions"
 
-# ╔═╡ 3b8a023d-16f7-4987-8b3b-ed99d77e63c1
-@subsection "Maximum Likelihood Estimate"
+# ╔═╡ 3c908f20-f5bb-4a38-972a-1ad9bcb522af
+@subsection "1D Gaussian"
 
-# ╔═╡ 16299665-778a-402b-aae9-4a7a007d8cec
-@subsection "Bayesian Estimate"
+# ╔═╡ 7e84dd5c-3f0e-40c5-b2af-4bf234aa5791
+@subsection "2D Gaussian"
 
-# ╔═╡ ee23b7b4-afcd-44ed-a926-5b718b4b9847
-md"""
-What is the probability that the probability of failure is less than 0.01?
-"""
-
-# ╔═╡ 1f037a1d-bf7e-4d8d-8f85-0ef9213300be
-md"""
-What value are we 95% confident that the probability of failure is less than?
-"""
-
-# ╔═╡ cd7544de-f94e-4a0a-ba8b-4c2613a68661
-@section "Importance Sampling"
-
-# ╔═╡ 946752eb-6ba1-4adc-aa59-a98d4b7862f5
-@subsection "Fitting a Proposal"
-
-# ╔═╡ 3af3855e-d6db-4580-8a10-4cda112a1bc3
-md"""
-First, draw samples from the failure distribution (e.g. using MCMC):
-"""
-
-# ╔═╡ 62685bbf-60f4-4c25-89c8-6fe976e8b015
-md"""
-Next, fit a distribution to these samples (e.g. a Gaussian distribution):
-"""
-
-# ╔═╡ 0be851b5-7017-4b40-96c3-434086bcdf81
-md"""
-Use the resulting distribution as the proposal distribution:
-"""
-
-# ╔═╡ c9f2eb66-e20c-4dc3-ae52-10d27c44f1ee
-@section "Adaptive Importance Sampling Estimation"
-
-# ╔═╡ 18347b9e-cc0d-424a-875c-c4714a9d52e0
-sample_dist = Normal(0, 1);
+# ╔═╡ 17a52dd4-ec23-4e9a-a9aa-fb811034fc69
+begin
+	ϵ_max = 3
+	function get_color(ϵ; ϵ_max=ϵ_max)
+		if ϵ > ϵ_max / 2
+			α = (ϵ - ϵ_max / 2) / (ϵ_max / 2)
+			color = α * theblue + (1-α) * thepurple
+		else
+			α = ϵ / (ϵ_max / 2)
+			color = α * thepurple + (1-α) * thered
+		end
+		return color
+	end
+md"> _Color Scheme_"
+end
 
 # ╔═╡ 39b9a784-2c8b-46a2-a414-1252638ade67
 begin
@@ -133,548 +107,84 @@ begin
 	md"> _Backend_"
 end
 
-# ╔═╡ 2d4830a3-0081-4485-91e3-4a27e198dc2c
+# ╔═╡ 77b216cc-fb2c-42fc-adff-606402e19c5a
 md"""
-Perception noise: $(@bind σ Slider(0.01:0.01:0.3, show_value=true, default=0.25))
-
-Number of rollouts: $(@bind m Slider(1:1:150, show_value=true, default=50))
+ $\epsilon$: $(@bind ϵ Slider([0; 0.2:0.05:ϵ_max; Inf], show_value=true, default=0))
 """
 
-# ╔═╡ dbc6540a-80b9-4da5-8971-ae68fd8ccafe
-md"""
-xmax: $(@bind xmax Slider(0.01:0.01:1.0, show_value=true, default=1.0))
-
-ymax: $(@bind ymax Slider(0:1:100, show_value=true, default=100))
-"""
-
-# ╔═╡ 7f9e81a1-194a-4d70-a6e9-eb390e3a54e0
-md"""
- Number of Samples: $(@bind mis Slider(10:10:1000, show_value=true, default=500))
-
- Failure threshold: $(@bind γ Slider(-4:0.25:-1, show_value=true, default=-2))
-
- $\mu$: $(@bind μ Slider(-5:0.1:0, show_value=true, default=0))
-
- $\sigma$: $(@bind σi Slider(0.1:0.1:2.0, show_value=true, default=1.0))
-"""
-
-# ╔═╡ 79906431-e878-4e24-bd06-06240f9f811f
-md"""
-ymax: $(@bind ym Slider(0:0.001:0.15, show_value=true, default=0.05))
-"""
-
-# ╔═╡ 9246a06d-8fd0-4a92-b3f7-3fdd9ca821ae
-md"""
- Number of Samples: $(@bind mfit Slider(10:10:1000, show_value=true, default=500))
-
- Failure threshold: $(@bind γ2 Slider(-4:0.25:-2, show_value=true, default=-2))
-"""
-
-# ╔═╡ 790bc106-244d-4b77-9d60-505424c69779
+# ╔═╡ a6d2dcdc-f2e2-4619-a7a6-45d5414a6db1
 begin
-	Random.seed!(4)
-	samples = rand(sample_dist, mfit)
-end;
-
-# ╔═╡ 49c97ae9-54fa-4017-8286-672c9a5e344b
-md"""
- Use weights for fit: $(@bind use_weights CheckBox())
-"""
-
-# ╔═╡ d2119119-98e4-4425-b042-004fb0dab42f
-begin
-	wah = false
-	if use_weights
-		ws_fitting = [(pdf(Normal(), s) * (s < γ2)) / pdf(sample_dist, s) for s in samples]
+	γ = -2
+	smoothing_density(x; ϵ=0.1) = pdf(Normal(), x) * pdf(Normal(0, ϵ), max(x - γ, 0)) / pdf(Normal(0, ϵ), 0)
+	pint = plot(xlims=(-4, 4), ylims=(0, 0.6), grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, alpha=0.6, legend=false, size=(650, 350), xlabel="τ")
+	plot!(pint, x->x>γ ? 0 : pdf(Normal(), x), -4, 4, color=thered, lw=4, alpha=0.6)
+	if ϵ == 0
+		plot!(pint, x->pdf(Normal(), x), -4, 4, color=theblue, lw=4, alpha=0.6)
+		plot!(pint, x->x>γ ? 0 : pdf(Normal(), x), -4, 4, color=thered, lw=6)
+	elseif ϵ == Inf
+		plot!(pint, x->pdf(Normal(), x), -4, 4, color=theblue, lw=6, alpha=1.0)
+		plot!(pint, x->x>γ ? 0 : pdf(Normal(), x), -4, 4, color=thered, lw=4, alpha=0.8)
 	else
-		ws_fitting = ones(mfit)
+		plot!(pint, x->pdf(Normal(), x), -4, 4, color=theblue, lw=4, alpha=0.8)
+		plot!(pint, x->smoothing_density(x, ϵ=ϵ), -4, 4, color=get_color(ϵ), lw=6)
+		plot!(pint, x->x>γ ? 0 : pdf(Normal(), x), -4, 4, color=thered, lw=4, alpha=0.8)
 	end
-	if sum(ws_fitting) > 0
-		μfitting = mean(samples, fweights(ws_fitting))
-		σfitting = std(samples, fweights(ws_fitting))
+end
+
+# ╔═╡ 3018c77c-ca89-4c46-aa27-48266015c586
+md"""
+ $\epsilon$: $(@bind ϵ2 Slider([0; 0.1:0.1:ϵ_max; Inf], show_value=true, default=Inf))
+"""
+
+# ╔═╡ fd8ae768-88c7-419b-bd44-bfc2bec84795
+begin
+	fthresh=3
+	Δ(x) = maximum([fthresh - x[1], fthresh - x[2], 0])
+	smoothing_density_2d(x; ϵ=0.1) = pdf(MvNormal(zeros(2), I), x) * pdf(Normal(0, ϵ), Δ(x)) / pdf(Normal(0, ϵ), 0)
+	
+	function plot_contour!(p, f, color; xlims=(-4, 4), ylims=(-4, 4), alpha=1.0)
+		x = collect(range(xlims[1], xlims[2], length=500))
+		y = collect(range(ylims[1], ylims[2], length=500))
+		z = @. f(x', y)
+		z = (z .- minimum(z)) ./ (maximum(z) - minimum(z))
+		contour!(p, x, y, z, cbar=false, xlims=xlims, ylims=ylims, color=cgrad([color, color]), lw=2, alpha=alpha, levels=7)
+	end
+
+	p2d = plot(xlims=(-4, 4), ylims=(-4, 4), grid=false, bg="transparent", background_color_inside=:black, fg="white", alpha=0.6, legend=false, size=(500, 500), xlabel=L"\tau_1", ylabel=L"\tau_2")
+	plot!(p2d, rectangle(1, 1, 3, 3), c=thered, alpha=0.6)
+	if ϵ2 == Inf
+		plot_contour!(p2d, (x, y)->pdf(MvNormal(zeros(2), I), [x, y]), theblue, alpha=1.0)
+		plot_contour!(p2d, (x, y)->(x > 3 && y > 3) ? pdf(MvNormal(zeros(2), I), [x, y]) : 0, thered, alpha=0.5)
+	elseif ϵ2 == 0
+		plot_contour!(p2d, (x, y)->pdf(MvNormal(zeros(2), I), [x, y]), theblue, alpha=0.5)
+		plot_contour!(p2d, (x, y)->(x > 3 && y > 3) ? pdf(MvNormal(zeros(2), I), [x, y]) : 0, thered, alpha=1.0)
 	else
-		wah = true
-		μfitting = 0
-		σfitting = 1
+		plot_contour!(p2d, (x, y)->pdf(MvNormal(zeros(2), I), [x, y]), theblue, alpha=0.5)
+		plot_contour!(p2d, (x, y)->(x > 3 && y > 3) ? pdf(MvNormal(zeros(2), I), [x, y]) : 0, thered, alpha=0.5)
+		plot_contour!(p2d, (x, y)->smoothing_density_2d([x, y], ϵ=ϵ2), get_color(ϵ2))
 	end
-end;
-
-# ╔═╡ d1d6a030-c02c-484e-932d-8d5ada036055
-begin
-	struct SimpleGaussianTrajectoryDistribution <: TrajectoryDistribution
-	    μ
-	    σ
-	end
-	function StanfordAA228V.initial_state_distribution(p::SimpleGaussianTrajectoryDistribution)
-	    return Normal(p.μ, p.σ)
-	end
-	function StanfordAA228V.disturbance_distribution(p::SimpleGaussianTrajectoryDistribution, t)
-	    D = DisturbanceDistribution(o->Deterministic(),
-	                                (s,a)->Deterministic(),
-	                                s->Deterministic())
-	    return D
-	end
-	StanfordAA228V.depth(p::SimpleGaussianTrajectoryDistribution) = 1
-
-	struct ImportanceSamplingEstimation
-	    p # nominal distribution
-	    q # proposal distribution
-	    m # number of samples
-	end
-	
-	struct DirectEstimation
-	    d # depth
-	    m # number of samples
-	end
-
-	function estimate_hist(alg::DirectEstimation, sys, γ)
-		d, m = alg.d, alg.m
-		samples = [rollout(sys, d=d) for i in 1:m]
-		ws = ones(m)
-		return samples, ws .* [τ[1].s < γ for τ in samples] #isfailure.(ψ, samples)
-	end
-
-	function estimate_hist(alg::ImportanceSamplingEstimation, sys, γ)
-		p, q, m = alg.p, alg.q, alg.m
-		samples = [rollout(sys, q) for i in 1:m]
-		ps = [pdf(p, τ) for τ in samples]
-		qs = [pdf(q, τ) for τ in samples]
-		ws = ps ./ qs
-		return samples, ws .* [τ[1].s < γ for τ in samples], ws
-	end
-	
-	md"> _Simple Gaussian Set Up_"
-end
-
-# ╔═╡ 09441084-4891-49ea-a8b0-a4ed6692c169
-begin
-	d = 1
-	mi = 1000
-	nruns = 10
-
-	agent1 = NoAgent()
-	env1 = SimpleGaussian()
-	sensor1 = IdealSensor()
-	simple_gaussian = System(agent1, env1, sensor1)
-
-	p = NominalTrajectoryDistribution(simple_gaussian)
-
-	Random.seed!(4)
-	prop = SimpleGaussianTrajectoryDistribution(0, 1)
-	alg_mc = ImportanceSamplingEstimation(p, prop, mi)
-	res_mc = [estimate_hist(alg_mc, simple_gaussian, γ) for i in 1:nruns]
-	hists_mc = [r[2] for r in res_mc]
-	τs_mc = res_mc[1][1]
-
-	Random.seed!(4)
-	res_mc2 = [estimate_hist(alg_mc, simple_gaussian, γ2) for i in 1:nruns]
-	hists_mc2 = [r[2] for r in res_mc2]
-
-	Random.seed!(4)
-	proposal = SimpleGaussianTrajectoryDistribution(μ, σi)
-	alg_is = ImportanceSamplingEstimation(p, proposal, mi)
-	res_is = [estimate_hist(alg_is, simple_gaussian, γ) for i in 1:nruns]
-	hists_is = [r[2] for r in res_is]
-	τs_is = res_is[1][1]
-	ws = res_is[1][3]
-
-	Random.seed!(4)
-	# alg_is_fit = ImportanceSamplingEstimation(p, fit_proposal, mi)
-	# res_is_fit = [estimate_hist(alg_is_fit, simple_gaussian, γ) for i in 1:nruns]
-	# hists_is_fit = [r[2] for r in res_is_fit]
-	# τs_is_fit = res_is_fit[1][1]
-	# ws_fit = res_is_fit[1][3]
-	
-	md"> _Importance Sampling_"
-end
-
-# ╔═╡ 9e36e46e-80ba-4b5f-b944-ef30e09bb7e8
-begin
-	function plot_samples(τs, dist; ws=ones(length(τs)), title="", color=theblue, ymax=0.8, failure_dist=false)
-		𝐬 = [τ[1].s for τ in τs]
-		ys = [pdf(dist, s) for s in 𝐬]
-		𝐬fail = filter(x->x<γ, 𝐬)
-		ysfail = [pdf(dist, s) for s in 𝐬fail]
-		inds_fail = findall(𝐬 .< γ)
-		# ws_fail = max.(min.(ws[inds_fail], 4), 0.1)
-		ws_fail = ws[inds_fail]
-		ws_fail_norm = (ws_fail/sum(ws_fail)) * length(ws_fail)
-		𝐬succ= filter(x->x>γ, 𝐬)
-		yssucc = [pdf(dist, s) for s in 𝐬succ]
-		inds_succ = findall(𝐬 .> γ)
-		ws_succ = max.(min.(ws[inds_succ], 4), 0.1)
-		
-		p1 = plot()
-		plot!(p1, rectangle(abs(-4 - γ), ymax, -4, 0), color=thered, alpha=0.3)
-		if failure_dist
-			plot!(p1, x->pdf(Truncated(Normal(), -Inf, γ), x), -4, 4, lw=1.5, color=:indianred1)
-		end
-		plot!(p1, x->pdf(Normal(), x), -4, 4, lw=2, color=:gray)
-		plot!(p1, x->pdf(dist, x), -4, 4, lw=2, color=color)
-		scatter!(p1, 𝐬fail, ysfail, marker_z=ws_fail_norm, xlims=(-4, 4), ylims=(0, ymax), grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false, alpha=0.6, title=title, legend=false, color=:viridis, msw=0, ms=3)#, clim=(0,2))
-		# scatter!(p1, 𝐬fail, ysfail, markersize=ws_fail.*7, legend=false, xlims=(-4, 4), ylims=(0, ymax), markercolor=:black, markerstrokecolor=thered, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false, alpha=0.8, title=title)
-		scatter!(p1, 𝐬succ, yssucc, markersize=3, legend=false, xlims=(-4, 4), ylims=(0, ymax), markercolor=:black, markerstrokecolor=:gray, xlabel="τ", alpha=1.0)
-
-		ess = 1 / sum((ws_fail ./ sum(ws_fail)).^2)
-		return p1, ess
-	end
-
-	pa, essa = plot_samples(τs_mc[1:mis], Normal(), title="Direct Estimation")
-	pb, essb = plot_samples(τs_is[1:mis], Normal(μ, σi), ws=ws, title="Importance Sampling")
-
-	nfail_is = sum([τ[1].s .< γ for τ in τs_is[1:mis]])
-	
-	pc = plot(rectangle(40, min(essb, 500), 0, 0), color=theblue, legend=false, aspect_ratio=:equal, grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false, ylims=(0, 500), xlims=(0, 40), title="ESS", alpha=0.75)
-	plot!(pc, rectangle(40, min(essa, 500), 0, 0), color=:gray)
-	plot!(pc, x->nfail_is, 0, 40, color=theblue, lw=3)
-
-	l = @layout [grid(1, 3, widths=[0.45, 0.45, 0.1])]
-	
-	plot(pa, pb, pc, layout=l, size=(650, 275))
-end
-
-# ╔═╡ d93a40e7-c3ee-407f-ae86-c749042a17f0
-begin
-	function plot_estimation_error!(p, hists, color; ns=1000, ymax=ym, label="", γ=γ)
-		histmat = hcat(hists...)[1:ns, :]
-		true_prob = cdf(Normal(), γ)
-		plt_every=1
-    
-	    sums = cumsum(histmat, dims=1)
-	    estimates = sums ./ collect(1:size(histmat, 1))
-	    errors = abs.(estimates .- true_prob)
-	    lbs = [quantile(errors[i, :], 0.05) for i in 1:plt_every:size(histmat, 1)] .+ 1e-12
-	    ubs = [quantile(errors[i, :], 0.95) for i in 1:plt_every:size(histmat, 1)]
-	    μ = [mean(errors[i, :]) for i in 1:plt_every:size(histmat, 1)]
-
-		x_vals = collect(1:length(μ))
-		
-		plot!(p, x_vals, μ, color=color, lw=4, xlims=(1, ns), ylims=(0, ymax), grid=false, bg="transparent", background_color_inside=:black, fg="white", xlabel="Number of Samples", ylabel="Absolute Estimation Error", label=label)
-
-		plot!(p, x_vals, ubs, fill=(lbs, color), fillalpha=1.0, lw=0, label="")
-
-		plot!(p, [x_vals; reverse(x_vals)], [ubs; reverse(lbs)], 
-          fill=(0, color), fillalpha=0.5, lw=0, label="")
-	end
-
-	pl = plot(size=(650, 350))
-	plot_estimation_error!(pl, hists_mc, :white, ns=mis, label="Direct Estimation")
-	plot_estimation_error!(pl, hists_is, theblue, ns=mis, label="Importance Sampling")
-end
-
-# ╔═╡ b165e3c6-7b72-4513-a2a6-cd55c73a9ce7
-begin
-	Random.seed!(4)
-	if !wah
-		alg_is_fitt = ImportanceSamplingEstimation(p, SimpleGaussianTrajectoryDistribution(μfitting, σfitting), mi)
-		res_is_fitt = [estimate_hist(alg_is_fitt, simple_gaussian, γ2) for i in 1:nruns]
-		hists_is_fitt = [r[2] for r in res_is_fitt]
-		τs_is_fitt = res_is_fitt[1][1]
-		ws_fitt = res_is_fitt[1][3]
-	end
-end;
-
-# ╔═╡ 1b6bb492-36bd-48b2-9a6b-d83e1eab1040
-begin
-	struct MCMCSampling
-		p̄        # target density
-		g        # kernel: τ′ = rollout(sys, g(τ))
-		τ        # initial trajectory
-		k_max    # max iterations
-		m_burnin # number of samples to discard from burn-in
-		m_skip   # number of samples to skip for thinning
-	end
-	
-	function sample_failures(alg::MCMCSampling, sys, ψ)
-		p̄, g, τ = alg.p̄, alg.g, alg.τ
-		k_max, m_burnin, m_skip = alg.k_max, alg.m_burnin, alg.m_skip
-		τs = [τ]
-		τ′s = []
-		for k in 1:k_max
-			τ′ = rollout(sys, g(τ))
-			push!(τ′s, τ′)
-			if rand() < (p̄(τ′) * pdf(g(τ′), τ)) / (p̄(τ) * pdf(g(τ), τ′))
-				τ = τ′
-			end
-			push!(τs, τ)
-		end
-		return τs[m_burnin:m_skip:end]
-	end
-
-	ψ_simple_gaussian = LTLSpecification(@formula □(s->s > -2));
-	Random.seed!(1)
-	p̄ = τ -> isfailure(ψ_simple_gaussian, τ) * pdf(p, τ)
-	simple_gaussian_kernel(τ) = SimpleGaussianTrajectoryDistribution(τ[1].s, 1.0)
-	τ_initial = rollout(simple_gaussian, -1.5, p)
-	# τ_initial = [(;s=1.0, a=0, o=0, x=Disturbance(0, 0, 0))]
-	k_max = 500
-	m_burnin = 1
-	m_skip = 1
-
-	md"> _MCMC_"
-end
-
-# ╔═╡ 0cd26f21-5848-457a-9b4b-dd0888133d76
-begin
-	alg = MCMCSampling(p̄, simple_gaussian_kernel, τ_initial, k_max, m_burnin, m_skip)
-	τs_mcmc = sample_failures(alg, simple_gaussian, ψ_simple_gaussian)
-end;
-
-# ╔═╡ 36f0e5a2-586e-4351-84bd-c25d20d2ef05
-begin
-	𝐬 = [τ[1].s for τ in τs_mcmc]
-	dist_fit = fit(Normal, 𝐬)
-end
-
-# ╔═╡ 1bd2e1e8-d57a-4894-9bf6-7a30b947a338
-fit_proposal = SimpleGaussianTrajectoryDistribution(dist_fit.μ, dist_fit.σ);
-
-# ╔═╡ 43daf5f4-02e7-411d-96d6-42806617783e
-begin
-	Random.seed!(4)
-	alg_is_fit = ImportanceSamplingEstimation(p, fit_proposal, mi)
-	res_is_fit = [estimate_hist(alg_is_fit, simple_gaussian, γ) for i in 1:nruns]
-	hists_is_fit = [r[2] for r in res_is_fit]
-	τs_is_fit = res_is_fit[1][1]
-	ws_fit = res_is_fit[1][3]
-end;
-
-# ╔═╡ 7b37a30e-fec7-4854-a48e-b9eb036758e1
-begin
-	# pl1, _ = plot_samples(τs_is_fit, Normal(dist_fit.μ, dist_fit.σ), ws=ws_fit, color=thepurple, ymax=1.5, failure_dist=true)
-	pl1 = plot(xlims=(-4, 4), ylims=(0, 1.5), grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false, alpha=0.6, legend=false)
-	plot!(pl1, rectangle(abs(-4 - γ), 1.5, -4, 0), color=thered, alpha=0.3)
-	plot!(pl1, x->pdf(Truncated(Normal(), -Inf, γ), x), -4, 4, lw=1.5, color=:indianred1)
-	plot!(pl1, x->pdf(Normal(), x), -4, 4, color=:gray, lw=2)
-	plot!(pl1, x->pdf(Normal(dist_fit.μ, dist_fit.σ), x), -4, 4, color=thepurple, lw=2)
-	scatter!(pl1, 𝐬[5:end], 0.02 * ones(length(𝐬)-5), markercolor=thered, markerstrokecolor=:indianred1, ms=4, msw=2, alpha=0.25)
-	
-	pll = plot(size=(650, 350))
-	plot_estimation_error!(pll, hists_mc, :white, ns=140, label="Direct Estimation")
-	plot_estimation_error!(pll, hists_is_fit, thepurple, ns=140, label="Fit Proposal")
-
-	pl2 = plot(pll, pl1, size=(650, 350))
 end
 
 # ╔═╡ 06edfbee-5d16-4e83-a4f9-caf5bd901c00
 @bind dark_mode DarkModeIndicator()
 
-# ╔═╡ f58a6427-a0f5-4a0b-ac01-6f017d12bcc7
-begin
-	sys = System(
-		ProportionalController([-15.0, -8.0]),
-		InvertedPendulum(),
-		AdditiveNoiseSensor(MvNormal(zeros(2), σ^2*I))
-	)
-
-	ψ = LTLSpecification(@formula □(s -> abs(s[1]) < π / 4))
-
-	simulate(m) = [rollout(sys, d=41) for i in 1:m]
-	
-	function plot_it(sys, ψ, τ=missing;
-					is_dark_mode=dark_mode,
-					title="Inverted Pendulum",
-					max_lines=100, size=(680,350), plot_successes=true, kwargs...)
-		if is_dark_mode
-			p = plot(
-				size=size,
-				grid=false,
-				bg="transparent",
-				background_color_inside="#1A1A1A",
-				fg="white",
-			)
-		else
-			p = plot(
-				size=size,
-				grid=false,
-				bg="transparent",
-				background_color_inside="white",
-			)
-		end
-	
-		plot!(p, rectangle(2, 1, 0, π/4), opacity=0.5, color="#F5615C", label=false)
-		plot!(p, rectangle(2, 1, 0, -π/4-1), opacity=0.5, color="#F5615C", label=false)
-		xlabel!(p, "Time (s)")
-		ylabel!(p, "𝜃 (rad)")
-		title!(p, title)
-		xlims!(p, 0, 2)
-		ylims!(p, -1.2, 1.2)
-		# StanfordAA228V.set_aspect_ratio!(p)
-	
-		function plot_pendulum_traj!(p, τ; lw=2, α=1, color="#009E73")
-			X = range(0, step=sys.env.dt, length=length(τ))
-			plot!(p, X, [step.s[1] for step in τ]; lw, color, α, label=false)
-		end
-	
-		if τ isa Vector{<:Vector}
-			# Multiple trajectories
-			τ_successes = filter(τᵢ->!isfailure(ψ, τᵢ), τ)
-			τ_failures = filter(τᵢ->isfailure(ψ, τᵢ), τ)
-			if plot_successes
-				for (i,τᵢ) in enumerate(τ_successes)
-					if i > max_lines
-						break
-					else
-						plot_pendulum_traj!(p, τᵢ; lw=1, α=0.75, color="#009E73")
-					end
-				end
-			end
-	
-			for τᵢ in τ_failures
-				plot_pendulum_traj!(p, τᵢ; lw=1, α=1, color="#F5615C")
-			end
-		elseif τ isa Vector
-			# Single trajectory
-			get_color(ψ, τ) = isfailure(ψ, τ) ? "#F5615C" : "#009E73"
-			plot_pendulum_traj!(p, τ; lw=2, color=get_color(ψ, τ))
-		end
-	
-		return p
-	end
-	
-	function plot_both(sys, ψ, τ=missing;
-					is_dark_mode=dark_mode,
-					title="Inverted Pendulum",
-					max_lines=100, size=(680,350))
-		p1 = plot_it(sys, ψ, τ, is_dark_mode=dark_mode, title="Falsification", max_lines=max_lines, size=size)
-		p2 = plot_it(sys, ψ, τ, is_dark_mode=dark_mode, title="Failure Distribution", max_lines=max_lines, size=size, plot_successes=false)
-		return plot(p1, p2)
-	end
-
-	md"> _Pendulum Plotting_"
-end
-
-# ╔═╡ 4281219b-64e8-475f-a49f-1695e3965735
-begin
-	Random.seed!(0)
-	τs = simulate(m)
-	nfail = sum(isfailure(ψ, τ) for τ in τs)
-	failurestring = nfail == 1 ? "failure" : "failures"
-	trajstring = m == 1 ? "trajectory" : "trajectories"
-
-	md"> _Simulation Code_"
-end
-
-# ╔═╡ fa3494a9-cdcc-4189-99fa-00b2d823736f
-begin
-	posterior = Beta(1 + nfail, 1 + m - nfail)
-	fg = dark_mode ? "white" : "black"
-	xspost = collect(range(0, 1, length=201))
-	yspost = pdf.(posterior, xspost)
-	plo = plot(xspost, yspost, xlims=(0,1), ylims=(0,22), legend=false,
-	lw=2, c=theblue, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg=fg, xlabel="\$\\theta\$", ylabel="\$P(\\theta \\mid D)\$", size=(300, 300), title="Beta($(Int(posterior.α)), $(Int(posterior.β)))")
-end
-
-# ╔═╡ 5a381b38-9b53-4b3b-992f-a6c1ac752c90
-cdf(posterior, 0.01)
-
-# ╔═╡ 12ce848c-8150-4243-8065-b2a91a840240
-begin
-	xshade = collect(range(0, stop=0.01, length=100))
-	yshade = pdf.(posterior, xshade)
-	xsp = collect(range(0, xmax, length=201))
-	ysp = pdf.(posterior, xsp)
-	ploo = plot(xsp, ysp, xlims=(0,xmax), ylims=(0,ymax), legend=false,
-	lw=2, c=theblue, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg=fg, xlabel="\$\\theta\$", ylabel="\$P(\\theta \\mid D)\$", size=(300, 300), title="Beta($(Int(posterior.α)), $(Int(posterior.β)))")
-	plot!(ploo, xshade, yshade, fill=(0, theblue, 0.3), lw=0)
-end
-
-# ╔═╡ 9568bfc4-c19b-4529-8af5-0e7c7181ed02
-quantile(posterior, 0.95)
-
-# ╔═╡ 90f6250e-6721-4a4e-8a8e-d04c65d9b520
-begin
-	xshade2 = collect(range(0, quantile(posterior, 0.95), length=100))
-	yshade2 = pdf.(posterior, xshade2)
-	plopo = plot(xsp, ysp, xlims=(0,xmax), ylims=(0,ymax), legend=false,
-	lw=2, c=theblue, grid=false, bg="transparent", background_color_inside="#1A1A1A", fg=fg, xlabel="\$\\theta\$", ylabel="\$P(\\theta \\mid D)\$", size=(300, 300), title="Beta($(Int(posterior.α)), $(Int(posterior.β)))")
-	plot!(plopo, xshade2, yshade2, fill=(0, theblue, 0.3), lw=0)
-end
-
-# ╔═╡ 93b6bab4-17d0-44bf-ba28-a1423da89bbc
-begin
-	function plot_samples_fit(𝐬, dist, dist_fit; ws=ones(length(τs)), title="", color=theblue, ymax=0.8)
-		# 𝐬 = [τ[1].s for τ in τs]
-		ys = zeros(length(𝐬)) #[pdf(dist, s) for s in 𝐬]
-		𝐬fail = filter(x->x<γ2, 𝐬)
-		ysfail = [0.02 for s in 𝐬fail] #[pdf(dist, s) for s in 𝐬fail]
-		inds_fail = findall(𝐬 .< γ2)
-		# ws_fail = max.(min.(ws[inds_fail], 4), 0.1)
-		ws_fail = pdf.(Normal(), 𝐬fail) ./ pdf.(dist, 𝐬fail)
-		𝐬succ= filter(x->x>γ2, 𝐬)
-		yssucc = [0.02 for s in 𝐬succ] #[pdf(dist, s) for s in 𝐬succ]
-		inds_succ = findall(𝐬 .> γ2)
-		# ws_succ = max.(min.(ws[inds_succ], 4), 0.1)
-		
-		p1 = plot()
-		plot!(p1, rectangle(abs(-4 - γ2), ymax, -4, 0), color=thered, alpha=0.3)
-		plot!(p1, x->pdf(Normal(), x), -4, 4, lw=2, color=:gray)
-		plot!(p1, x->pdf(dist, x), -4, 4, lw=2, color=color)
-		if !wah
-			plot!(p1, x->pdf(dist_fit, x), -4, 4, lw=2, color=thepurple)
-		else
-			annotate!(p1, 0, 0.6, text("Ahhhhhh!!!", 16, thepurple))
-		end
-		if use_weights && !wah
-			scatter!(p1, 𝐬fail, ysfail, marker_z=ws_fail, xlims=(-4, 4), ylims=(0, ymax), grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false, alpha=0.8, title=title, legend=false, color=:viridis, msw=0, ms=4, colorbar=false)
-		else
-			scatter!(p1, 𝐬fail, ysfail, xlims=(-4, 4), ylims=(0, ymax), grid=false, bg="transparent", background_color_inside=:black, fg="white", yticks=false, xticks=false, alpha=0.8, title=title, legend=false,  markercolor=:black, markerstrokecolor=:white, ms=4, colorbar=false)
-		end
-		scatter!(p1, 𝐬succ, yssucc, markersize=4, legend=false, xlims=(-4, 4), ylims=(0, ymax), markercolor=:black, markerstrokecolor=:white, xlabel="τ", alpha=1.0)
-	
-		return p1
-	end
-	
-	pi = plot_samples_fit(samples, sample_dist, Normal(μfitting, σfitting), ymax=1.3)
-	pii = plot()
-	plot_estimation_error!(pii, hists_mc2, :white, ns=140, label="Direct Estimation", γ=γ2, ymax=2 * cdf(Normal(), γ2))
-	if !wah
-		plot_estimation_error!(pii, hists_is_fitt, thepurple, ns=140, label="Fit Proposal", γ=γ2)
-	end
-
-	plot(pii, pi, size=(650, 350))
-end
-
-# ╔═╡ f1598110-c482-4d37-95a4-f68d886498d6
-begin
-	p1 = plot_it(sys, ψ, τs)
-	result = round(nfail / m, digits=3)
-	text_str = L"p_\mathrm{fail} = \frac{%$(nfail)}{%$m} = %$result"
-	p2 = plot(; xlims=(0, 1), ylims=(0, 1), framestyle=:none, axis=false)
-	annotate!(p2, 0.5, 0.5, text(text_str, 12, :white))
-	annotate!(p2, 0.5, 0.7, text("Maximum Likelihood Estimate", 12, :white))
-
-	plot(p1, p2, size=(650, 350))
-end
-
-# ╔═╡ bb3d0fe1-d1c6-47ef-bec4-82c1ace1c6ed
-toc()
-
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
-BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
-Base64 = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
-LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoPapers = "d3cde879-03ee-4818-9d5f-9ea6cf0edfee"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
-Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 StanfordAA228V = "6f6e590e-f8c2-4a21-9268-94576b9fb3b1"
-StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 
 [compat]
-BSON = "~0.3.9"
-Distributions = "~0.25.117"
-LaTeXStrings = "~1.4.0"
+Distributions = "~0.25.115"
 Plots = "~1.40.9"
 PlutoPapers = "~0.1.0"
-PlutoUI = "~0.7.61"
-StanfordAA228V = "~0.1.23"
-StatsBase = "~0.34.4"
+PlutoUI = "~0.7.60"
+StanfordAA228V = "~0.1.22"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -683,7 +193,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.11.1"
 manifest_format = "2.0"
-project_hash = "403ca32dce44da496d62d23d1448ed23adeb28f1"
+project_hash = "f0bbc97fec849474226e9173fdf12ae9a9bb95f8"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -760,27 +270,19 @@ version = "1.11.0"
 
 [[deps.Atomix]]
 deps = ["UnsafeAtomics"]
-git-tree-sha1 = "93da6c8228993b0052e358ad592ee7c1eccaa639"
+git-tree-sha1 = "c3b238aa28c1bebd4b5ea4988bebf27e9a01b72b"
 uuid = "a9b6321e-bd34-4604-b9c9-b65b8de01458"
-version = "1.1.0"
+version = "1.0.1"
 
     [deps.Atomix.extensions]
     AtomixCUDAExt = "CUDA"
     AtomixMetalExt = "Metal"
-    AtomixOpenCLExt = "OpenCL"
     AtomixoneAPIExt = "oneAPI"
 
     [deps.Atomix.weakdeps]
     CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
     Metal = "dde4c033-4e86-420c-a63e-0dd931031962"
-    OpenCL = "08131aa3-fb12-5dee-8b74-c09406e224a2"
     oneAPI = "8f75cd03-7ff8-4ecb-9b8f-daf728133b1b"
-
-[[deps.AxisAlgorithms]]
-deps = ["LinearAlgebra", "Random", "SparseArrays", "WoodburyMatrices"]
-git-tree-sha1 = "01b8ccb13d68535d73d2b0c23e39bd23155fb712"
-uuid = "13072b0f-2c55-5437-9ae7-d433b7a33950"
-version = "1.1.0"
 
 [[deps.BSON]]
 git-tree-sha1 = "4c3e506685c527ac6a54ccc0c8c76fd6f91b42fb"
@@ -792,10 +294,10 @@ uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 version = "1.11.0"
 
 [[deps.BenchmarkTools]]
-deps = ["Compat", "JSON", "Logging", "Printf", "Profile", "Statistics", "UUIDs"]
-git-tree-sha1 = "e38fbc49a620f5d0b660d7f543db1009fe0f8336"
+deps = ["JSON", "Logging", "Printf", "Profile", "Statistics", "UUIDs"]
+git-tree-sha1 = "f1dff6729bc61f4d49e140da1af55dcd1ac97b2f"
 uuid = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
-version = "1.6.0"
+version = "1.5.0"
 
 [[deps.BitFlags]]
 git-tree-sha1 = "0691e34b3bb8be9307330f88d1a3c3f25466c24d"
@@ -803,10 +305,10 @@ uuid = "d1d4a3ce-64b1-5f1a-9ba4-7e7e69966f35"
 version = "0.1.9"
 
 [[deps.Bzip2_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "1b96ea4a01afe0ea4090c5c8039690672dd13f2e"
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "8873e196c2eb87962a2048b3b8e08946535864a1"
 uuid = "6e34b625-4abd-537c-b88f-471c36dfa7a0"
-version = "1.0.9+0"
+version = "1.0.8+4"
 
 [[deps.CEnum]]
 git-tree-sha1 = "389ad5c84de1ae7cf0e28e381131c98ea87d54fc"
@@ -867,9 +369,9 @@ version = "0.7.6"
 
 [[deps.ColorSchemes]]
 deps = ["ColorTypes", "ColorVectorSpace", "Colors", "FixedPointNumbers", "PrecompileTools", "Random"]
-git-tree-sha1 = "26ec26c98ae1453c692efded2b17e15125a5bea1"
+git-tree-sha1 = "c785dfb1b3bfddd1da557e861b919819b82bbe5b"
 uuid = "35d6a980-a343-548e-a6ea-1d62b119f2f4"
-version = "3.28.0"
+version = "3.27.1"
 
 [[deps.ColorTypes]]
 deps = ["FixedPointNumbers", "Random"]
@@ -991,17 +493,6 @@ git-tree-sha1 = "23163d55f885173722d1e4cf0f6110cdbaf7e272"
 uuid = "b552c78f-8df3-52c6-915a-8e097449b14b"
 version = "1.15.1"
 
-[[deps.Distances]]
-deps = ["LinearAlgebra", "Statistics", "StatsAPI"]
-git-tree-sha1 = "c7e3a542b999843086e2f29dac96a618c105be1d"
-uuid = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
-version = "0.10.12"
-weakdeps = ["ChainRulesCore", "SparseArrays"]
-
-    [deps.Distances.extensions]
-    DistancesChainRulesCoreExt = "ChainRulesCore"
-    DistancesSparseArraysExt = "SparseArrays"
-
 [[deps.Distributed]]
 deps = ["Random", "Serialization", "Sockets"]
 uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
@@ -1009,9 +500,9 @@ version = "1.11.0"
 
 [[deps.Distributions]]
 deps = ["AliasTables", "FillArrays", "LinearAlgebra", "PDMats", "Printf", "QuadGK", "Random", "SpecialFunctions", "Statistics", "StatsAPI", "StatsBase", "StatsFuns"]
-git-tree-sha1 = "03aa5d44647eaec98e1920635cdfed5d5560a8b9"
+git-tree-sha1 = "4b138e4643b577ccf355377c2bc70fa975af25de"
 uuid = "31c24e10-a181-5473-b8eb-7969acd0382f"
-version = "0.25.117"
+version = "0.25.115"
 
     [deps.Distributions.extensions]
     DistributionsChainRulesCoreExt = "ChainRulesCore"
@@ -1068,14 +559,14 @@ uuid = "e2ba6199-217a-4e67-a87a-7c52f15ade04"
 version = "0.1.10"
 
 [[deps.ExpressionExplorer]]
-git-tree-sha1 = "71d0768dd78ad62d3582091bf338d98af8bbda67"
+git-tree-sha1 = "7005f1493c18afb2fa3bdf06e02b16a9fde5d16d"
 uuid = "21656369-7473-754a-2065-74616d696c43"
-version = "1.1.1"
+version = "1.1.0"
 
 [[deps.ExproniconLite]]
-git-tree-sha1 = "c13f0b150373771b0fdc1713c97860f8df12e6c2"
+git-tree-sha1 = "4c9ed87a6b3cd90acf24c556f2119533435ded38"
 uuid = "55351af7-c7e9-48d6-89ff-24e801d99491"
-version = "0.10.14"
+version = "0.10.13"
 
 [[deps.FFMPEG]]
 deps = ["FFMPEG_jll"]
@@ -1113,9 +604,9 @@ weakdeps = ["PDMats", "SparseArrays", "Statistics"]
 
 [[deps.FiniteDiff]]
 deps = ["ArrayInterface", "LinearAlgebra", "Setfield"]
-git-tree-sha1 = "f089ab1f834470c525562030c8cfde4025d5e915"
+git-tree-sha1 = "84e3a47db33be7248daa6274b287507dd6ff84e8"
 uuid = "6a86dc24-6348-571c-b903-95158fe2bd41"
-version = "2.27.0"
+version = "2.26.2"
 
     [deps.FiniteDiff.extensions]
     FiniteDiffBandedMatricesExt = "BandedMatrices"
@@ -1203,10 +694,10 @@ uuid = "781609d7-10c4-51f6-84f2-b8444358ff6d"
 version = "6.3.0+0"
 
 [[deps.GPUArrays]]
-deps = ["Adapt", "GPUArraysCore", "KernelAbstractions", "LLVM", "LinearAlgebra", "Printf", "Random", "Reexport", "ScopedValues", "Serialization", "Statistics"]
-git-tree-sha1 = "0ef97e93edced3d0e713f4cfd031cc9020e022b0"
+deps = ["Adapt", "GPUArraysCore", "KernelAbstractions", "LLVM", "LinearAlgebra", "Printf", "Random", "Reexport", "Serialization", "Statistics"]
+git-tree-sha1 = "4ec797b1b2ee964de0db96f10cce05b81f23e108"
 uuid = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
-version = "11.2.1"
+version = "11.1.0"
 
 [[deps.GPUArraysCore]]
 deps = ["Adapt"]
@@ -1216,15 +707,15 @@ version = "0.2.0"
 
 [[deps.GR]]
 deps = ["Artifacts", "Base64", "DelimitedFiles", "Downloads", "GR_jll", "HTTP", "JSON", "Libdl", "LinearAlgebra", "Preferences", "Printf", "Qt6Wayland_jll", "Random", "Serialization", "Sockets", "TOML", "Tar", "Test", "p7zip_jll"]
-git-tree-sha1 = "9bf00ba4c45867c86251a7fd4cb646dcbeb41bf0"
+git-tree-sha1 = "424c8f76017e39fdfcdbb5935a8e6742244959e8"
 uuid = "28b8d3ca-fb5f-59d9-8090-bfdbd6d07a71"
-version = "0.73.12"
+version = "0.73.10"
 
 [[deps.GR_jll]]
 deps = ["Artifacts", "Bzip2_jll", "Cairo_jll", "FFMPEG_jll", "Fontconfig_jll", "FreeType2_jll", "GLFW_jll", "JLLWrappers", "JpegTurbo_jll", "Libdl", "Libtiff_jll", "Pixman_jll", "Qt6Base_jll", "Zlib_jll", "libpng_jll"]
-git-tree-sha1 = "36d5430819123553bf31dfdceb3653ca7d9e62d7"
+git-tree-sha1 = "b90934c8cb33920a8dc66736471dc3961b42ec9f"
 uuid = "d2c73de3-f751-5644-a686-071e5b155ba9"
-version = "0.73.12+0"
+version = "0.73.10+0"
 
 [[deps.Gettext_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Libiconv_jll", "Pkg", "XML2_jll"]
@@ -1267,16 +758,11 @@ git-tree-sha1 = "55c53be97790242c29031e5cd45e8ac296dadda3"
 uuid = "2e76f6c2-a576-52d4-95c1-20adfe4de566"
 version = "8.5.0+0"
 
-[[deps.HashArrayMappedTries]]
-git-tree-sha1 = "2eaa69a7cab70a52b9687c8bf950a5a93ec895ae"
-uuid = "076d061b-32b6-4027-95e0-9a2c6f6d7e74"
-version = "0.2.0"
-
 [[deps.HypergeometricFunctions]]
 deps = ["LinearAlgebra", "OpenLibm_jll", "SpecialFunctions"]
-git-tree-sha1 = "2bd56245074fab4015b9174f24ceba8293209053"
+git-tree-sha1 = "b1c2585431c382e3fe5805874bda6aea90a95de9"
 uuid = "34004b35-14d8-5ef3-9330-4cdb6864b03a"
-version = "0.3.27"
+version = "0.3.25"
 
 [[deps.Hyperscript]]
 deps = ["Test"]
@@ -1307,16 +793,6 @@ deps = ["Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
 version = "1.11.0"
 
-[[deps.Interpolations]]
-deps = ["Adapt", "AxisAlgorithms", "ChainRulesCore", "LinearAlgebra", "OffsetArrays", "Random", "Ratios", "Requires", "SharedArrays", "SparseArrays", "StaticArrays", "WoodburyMatrices"]
-git-tree-sha1 = "88a101217d7cb38a7b481ccd50d21876e1d1b0e0"
-uuid = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
-version = "0.15.1"
-weakdeps = ["Unitful"]
-
-    [deps.Interpolations.extensions]
-    InterpolationsUnitfulExt = "Unitful"
-
 [[deps.IntervalArithmetic]]
 deps = ["CRlibm", "EnumX", "FastRounding", "LinearAlgebra", "Markdown", "Random", "RecipesBase", "RoundingEmulator", "SetRounding", "StaticArrays"]
 git-tree-sha1 = "f59e639916283c1d2e106d2b00910b50f4dab76c"
@@ -1324,9 +800,9 @@ uuid = "d1acc4aa-44c8-5952-acd4-ba5d80a2a253"
 version = "0.21.2"
 
 [[deps.IrrationalConstants]]
-git-tree-sha1 = "e2222959fbc6c19554dc15174c81bf7bf3aa691c"
+git-tree-sha1 = "630b497eafcc20001bba38a4651b327dcfc491d2"
 uuid = "92d709cd-6900-40b7-9082-c6be49f344b6"
-version = "0.2.4"
+version = "0.2.2"
 
 [[deps.IteratorInterfaceExtensions]]
 git-tree-sha1 = "a3f24677c21f5bbe9d2a714f95dcd58337fb2856"
@@ -1351,18 +827,6 @@ git-tree-sha1 = "31e996f0a15c7b280ba9f76636b3ff9e2ae58c9a"
 uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 version = "0.21.4"
 
-[[deps.JSON3]]
-deps = ["Dates", "Mmap", "Parsers", "PrecompileTools", "StructTypes", "UUIDs"]
-git-tree-sha1 = "1d322381ef7b087548321d3f878cb4c9bd8f8f9b"
-uuid = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
-version = "1.14.1"
-
-    [deps.JSON3.extensions]
-    JSON3ArrowExt = ["ArrowTypes"]
-
-    [deps.JSON3.weakdeps]
-    ArrowTypes = "31f734f8-188a-4ce0-8406-c8a06bd891cd"
-
 [[deps.JpegTurbo_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
 git-tree-sha1 = "eac1206917768cb54957c65a615460d87b455fc1"
@@ -1371,9 +835,9 @@ version = "3.1.1+0"
 
 [[deps.JuMP]]
 deps = ["LinearAlgebra", "MacroTools", "MathOptInterface", "MutableArithmetics", "OrderedCollections", "PrecompileTools", "Printf", "SparseArrays"]
-git-tree-sha1 = "02b6e65736debc1f47b40b0f7d5dfa0217ee1f09"
+git-tree-sha1 = "866dd0bf0474f0d5527c2765c71889762ba90a27"
 uuid = "4076af6c-e467-56ae-b986-b466b2749572"
-version = "1.23.6"
+version = "1.23.5"
 
     [deps.JuMP.extensions]
     JuMPDimensionalDataExt = "DimensionalData"
@@ -1383,15 +847,15 @@ version = "1.23.6"
 
 [[deps.JuliaInterpreter]]
 deps = ["CodeTracking", "InteractiveUtils", "Random", "UUIDs"]
-git-tree-sha1 = "a729439c18f7112cbbd9fcdc1771ecc7f071df6a"
+git-tree-sha1 = "10da5154188682e5c0726823c2b5125957ec3778"
 uuid = "aa1ae85d-cabe-5617-a682-6adf51b2e16a"
-version = "0.9.39"
+version = "0.9.38"
 
 [[deps.KernelAbstractions]]
 deps = ["Adapt", "Atomix", "InteractiveUtils", "MacroTools", "PrecompileTools", "Requires", "StaticArrays", "UUIDs"]
-git-tree-sha1 = "d5bc0b079382e89bfa91433639bc74b9f9e17ae7"
+git-tree-sha1 = "b9a838cd3028785ac23822cded5126b3da394d1a"
 uuid = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
-version = "0.9.33"
+version = "0.9.31"
 
     [deps.KernelAbstractions.extensions]
     EnzymeExt = "EnzymeCore"
@@ -1417,9 +881,9 @@ version = "4.0.1+0"
 
 [[deps.LLVM]]
 deps = ["CEnum", "LLVMExtra_jll", "Libdl", "Preferences", "Printf", "Unicode"]
-git-tree-sha1 = "5fcfea6df2ff3e4da708a40c969c3812162346df"
+git-tree-sha1 = "d422dfd9707bec6617335dc2ea3c5172a87d5908"
 uuid = "929cbde3-209d-540e-8aea-75f648917ca0"
-version = "9.2.0"
+version = "9.1.3"
 
     [deps.LLVM.extensions]
     BFloat16sExt = "BFloat16s"
@@ -1429,9 +893,9 @@ version = "9.2.0"
 
 [[deps.LLVMExtra_jll]]
 deps = ["Artifacts", "JLLWrappers", "LazyArtifacts", "Libdl", "TOML"]
-git-tree-sha1 = "4b5ad6a4ffa91a00050a964492bc4f86bb48cea0"
+git-tree-sha1 = "05a8bd5a42309a9ec82f700876903abce1017dd3"
 uuid = "dad2f222-ce93-54a1-a47d-0025e8a3acab"
-version = "0.0.35+0"
+version = "0.0.34+0"
 
 [[deps.LLVMOpenMP_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -1441,9 +905,9 @@ version = "18.1.7+0"
 
 [[deps.LZO_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "1c602b1127f4751facb671441ca72715cc95938a"
+git-tree-sha1 = "854a9c268c43b77b0a27f22d7fab8d33cdb3a731"
 uuid = "dd4b983a-f0e5-5f8d-a1b7-129d4a5fb1ac"
-version = "2.10.3+0"
+version = "2.10.2+3"
 
 [[deps.LaTeXStrings]]
 git-tree-sha1 = "dda21b8cbd6a6c40d9d02a73230f9d70fed6918c"
@@ -1478,9 +942,9 @@ version = "1.11.0"
 
 [[deps.LazySets]]
 deps = ["Distributed", "GLPK", "IntervalArithmetic", "JuMP", "LinearAlgebra", "Random", "ReachabilityBase", "RecipesBase", "Reexport", "Requires", "SharedArrays", "SparseArrays", "StaticArraysCore"]
-git-tree-sha1 = "acac6ec3e8945b48d1923bbe18f0ccb254afa91d"
+git-tree-sha1 = "ae9b6a027c694b9e0bab91fc25d0b2808f1bf755"
 uuid = "b4f0291d-fe17-52bc-9479-3d1a343d9043"
-version = "3.1.0"
+version = "3.0.0"
 
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
@@ -1537,15 +1001,15 @@ version = "1.51.1+0"
 
 [[deps.Libiconv_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "be484f5c92fad0bd8acfef35fe017900b0b73809"
+git-tree-sha1 = "61dfdba58e585066d8bce214c5a51eaa0539f269"
 uuid = "94ce4f54-9a6c-5748-9c1c-f9c7231a4531"
-version = "1.18.0+0"
+version = "1.17.0+1"
 
 [[deps.Libmount_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "89211ea35d9df5831fca5d33552c02bd33878419"
+git-tree-sha1 = "84eef7acd508ee5b3e956a2ae51b05024181dee0"
 uuid = "4b2f31a3-9ecc-558c-b454-b3730dcb73e9"
-version = "2.40.3+0"
+version = "2.40.2+2"
 
 [[deps.Libtiff_jll]]
 deps = ["Artifacts", "JLLWrappers", "JpegTurbo_jll", "LERC_jll", "Libdl", "XZ_jll", "Zlib_jll", "Zstd_jll"]
@@ -1555,9 +1019,9 @@ version = "4.7.1+0"
 
 [[deps.Libuuid_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "e888ad02ce716b319e6bdb985d2ef300e7089889"
+git-tree-sha1 = "edbf5309f9ddf1cab25afc344b1e8150b7c832f9"
 uuid = "38a345b3-de98-5d2b-a5d3-14cd9215e700"
-version = "2.40.3+0"
+version = "2.40.2+2"
 
 [[deps.LineSearches]]
 deps = ["LinearAlgebra", "NLSolversBase", "NaNMath", "Parameters", "Printf"]
@@ -1603,14 +1067,15 @@ uuid = "6f1432cf-f94c-5a45-995e-cdbf5db27b0b"
 version = "3.1.0"
 
 [[deps.MIMEs]]
-git-tree-sha1 = "1833212fd6f580c20d4291da9c1b4e8a655b128e"
+git-tree-sha1 = "65f28ad4b594aebe22157d6fac869786a255b7eb"
 uuid = "6c6e2e6c-3030-632d-7369-2d6c69616d65"
-version = "1.0.0"
+version = "0.1.4"
 
 [[deps.MacroTools]]
-git-tree-sha1 = "72aebe0b5051e5143a079a4685a46da330a40472"
+deps = ["Markdown", "Random"]
+git-tree-sha1 = "2fa9ee3e63fd3a4f7a9a4f4744a52f4856de82df"
 uuid = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
-version = "0.5.15"
+version = "0.5.13"
 
 [[deps.Malt]]
 deps = ["Distributed", "Logging", "RelocatableFolders", "Serialization", "Sockets"]
@@ -1624,10 +1089,10 @@ uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
 version = "1.11.0"
 
 [[deps.MathOptInterface]]
-deps = ["BenchmarkTools", "CodecBzip2", "CodecZlib", "DataStructures", "ForwardDiff", "JSON3", "LinearAlgebra", "MutableArithmetics", "NaNMath", "OrderedCollections", "PrecompileTools", "Printf", "SparseArrays", "SpecialFunctions", "Test", "Unicode"]
-git-tree-sha1 = "f5f67affb675630421d169ffd5dfa00cffcc07ca"
+deps = ["BenchmarkTools", "CodecBzip2", "CodecZlib", "DataStructures", "ForwardDiff", "JSON", "LinearAlgebra", "MutableArithmetics", "NaNMath", "OrderedCollections", "PrecompileTools", "Printf", "SparseArrays", "SpecialFunctions", "Test", "Unicode"]
+git-tree-sha1 = "e065ca5234f53fd6f920efaee4940627ad991fb4"
 uuid = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
-version = "1.35.2"
+version = "1.34.0"
 
 [[deps.MbedTLS]]
 deps = ["Dates", "MbedTLS_jll", "MozillaCACerts_jll", "NetworkOptions", "Random", "Sockets"]
@@ -1667,9 +1132,9 @@ version = "1.2.1"
 
 [[deps.MutableArithmetics]]
 deps = ["LinearAlgebra", "SparseArrays", "Test"]
-git-tree-sha1 = "9c0bc309df575c85422232eedfb74d5a9c155401"
+git-tree-sha1 = "a2710df6b0931f987530f59427441b21245d8f5e"
 uuid = "d8a4904e-b15c-11e9-3269-09a3773c0cb0"
-version = "1.6.3"
+version = "1.6.0"
 
 [[deps.NLSolversBase]]
 deps = ["DiffResults", "Distributed", "FiniteDiff", "ForwardDiff"]
@@ -1679,22 +1144,13 @@ version = "7.8.3"
 
 [[deps.NaNMath]]
 deps = ["OpenLibm_jll"]
-git-tree-sha1 = "cc0a5deefdb12ab3a096f00a6d42133af4560d71"
+git-tree-sha1 = "0877504529a3e5c3343c6f8b4c0381e57e4387e4"
 uuid = "77ba4419-2d1f-58cd-9bb1-8ffee604a2e3"
-version = "1.1.2"
+version = "1.0.2"
 
 [[deps.NetworkOptions]]
 uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
 version = "1.2.0"
-
-[[deps.OffsetArrays]]
-git-tree-sha1 = "5e1897147d1ff8d98883cda2be2187dcf57d8f0c"
-uuid = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
-version = "1.15.0"
-weakdeps = ["Adapt"]
-
-    [deps.OffsetArrays.extensions]
-    OffsetArraysAdaptExt = "Adapt"
 
 [[deps.Ogg_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1732,9 +1188,9 @@ version = "0.5.6+0"
 
 [[deps.Optim]]
 deps = ["Compat", "FillArrays", "ForwardDiff", "LineSearches", "LinearAlgebra", "NLSolversBase", "NaNMath", "Parameters", "PositiveFactorizations", "Printf", "SparseArrays", "StatsBase"]
-git-tree-sha1 = "c1f51f704f689f87f28b33836fd460ecf9b34583"
+git-tree-sha1 = "ab7edad78cdef22099f43c54ef77ac63c2c9cc64"
 uuid = "429524aa-4258-5aef-a3af-852621145aeb"
-version = "1.11.0"
+version = "1.10.0"
 weakdeps = ["MathOptInterface"]
 
     [deps.Optim.extensions]
@@ -1747,9 +1203,9 @@ uuid = "91d4177d-7536-5919-b921-800302f37372"
 version = "1.3.3+0"
 
 [[deps.OrderedCollections]]
-git-tree-sha1 = "cc4054e898b852042d7b503313f7ad03de99c3dd"
+git-tree-sha1 = "12f1439c4f986bb868acda6ea33ebc78e19b95ad"
 uuid = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
-version = "1.8.0"
+version = "1.7.0"
 
 [[deps.PCRE2_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1758,9 +1214,9 @@ version = "10.42.0+1"
 
 [[deps.PDMats]]
 deps = ["LinearAlgebra", "SparseArrays", "SuiteSparse"]
-git-tree-sha1 = "966b85253e959ea89c53a9abebbf2e964fbf593b"
+git-tree-sha1 = "949347156c25054de2db3b166c52ac4728cbad65"
 uuid = "90014a1f-27ba-587c-ab20-58faa44d9150"
-version = "0.11.32"
+version = "0.11.31"
 
 [[deps.Pango_jll]]
 deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "FriBidi_jll", "Glib_jll", "HarfBuzz_jll", "JLLWrappers", "Libdl"]
@@ -1870,9 +1326,9 @@ version = "0.3.1"
 
 [[deps.PlutoUI]]
 deps = ["AbstractPlutoDingetjes", "Base64", "ColorTypes", "Dates", "FixedPointNumbers", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "MIMEs", "Markdown", "Random", "Reexport", "URIs", "UUIDs"]
-git-tree-sha1 = "7e71a55b87222942f0f9337be62e26b1f103d3e4"
+git-tree-sha1 = "eba4810d5e6a01f612b948c9fa94f905b49087b0"
 uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
-version = "0.7.61"
+version = "0.7.60"
 
 [[deps.PositiveFactorizations]]
 deps = ["LinearAlgebra"]
@@ -1913,9 +1369,9 @@ uuid = "33c8b6b6-d38a-422a-b730-caa89a2f386c"
 version = "0.1.4"
 
 [[deps.PtrArrays]]
-git-tree-sha1 = "1d36ef11a9aaf1e8b74dacc6a731dd1de8fd493d"
+git-tree-sha1 = "77a42d78b6a92df47ab37e177b2deac405e1c88f"
 uuid = "43287f4e-b6f4-7ad1-bb20-aadabca52c3d"
-version = "1.3.0"
+version = "1.2.1"
 
 [[deps.Qt6Base_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Fontconfig_jll", "Glib_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "OpenSSL_jll", "Vulkan_Loader_jll", "Xorg_libSM_jll", "Xorg_libXext_jll", "Xorg_libXrender_jll", "Xorg_libxcb_jll", "Xorg_xcb_util_cursor_jll", "Xorg_xcb_util_image_jll", "Xorg_xcb_util_keysyms_jll", "Xorg_xcb_util_renderutil_jll", "Xorg_xcb_util_wm_jll", "Zlib_jll", "libinput_jll", "xkbcommon_jll"]
@@ -1962,16 +1418,6 @@ version = "1.11.0"
 deps = ["SHA"]
 uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 version = "1.11.0"
-
-[[deps.Ratios]]
-deps = ["Requires"]
-git-tree-sha1 = "1342a47bf3260ee108163042310d26f2be5ec90b"
-uuid = "c84ed2f1-dad5-54f0-aa8e-dbefe2724439"
-version = "0.4.5"
-weakdeps = ["FixedPointNumbers"]
-
-    [deps.Ratios.extensions]
-    RatiosFixedPointNumbersExt = "FixedPointNumbers"
 
 [[deps.ReachabilityBase]]
 deps = ["ExprTools", "InteractiveUtils", "LinearAlgebra", "Random", "Requires", "SparseArrays"]
@@ -2021,14 +1467,10 @@ uuid = "ae029012-a4dd-5104-9daa-d747884805df"
 version = "1.3.0"
 
 [[deps.Revise]]
-deps = ["CodeTracking", "FileWatching", "JuliaInterpreter", "LibGit2", "LoweredCodeUtils", "OrderedCollections", "REPL", "Requires", "UUIDs", "Unicode"]
-git-tree-sha1 = "9bb80533cb9769933954ea4ffbecb3025a783198"
+deps = ["CodeTracking", "Distributed", "FileWatching", "JuliaInterpreter", "LibGit2", "LoweredCodeUtils", "OrderedCollections", "REPL", "Requires", "UUIDs", "Unicode"]
+git-tree-sha1 = "6f6bd06b578763245e28aeea649e38fdf4b72e87"
 uuid = "295af30f-e4ad-537b-8983-00126c2a3abe"
-version = "3.7.2"
-weakdeps = ["Distributed"]
-
-    [deps.Revise.extensions]
-    DistributedExt = "Distributed"
+version = "3.6.5"
 
 [[deps.Rmath]]
 deps = ["Random", "Rmath_jll"]
@@ -2050,12 +1492,6 @@ version = "0.2.1"
 [[deps.SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 version = "0.7.0"
-
-[[deps.ScopedValues]]
-deps = ["HashArrayMappedTries", "Logging"]
-git-tree-sha1 = "1147f140b4c8ddab224c94efa9569fc23d63ab44"
-uuid = "7e506255-f358-4e82-b7e4-beb19740aa63"
-version = "1.3.0"
 
 [[deps.Scratch]]
 deps = ["Dates"]
@@ -2138,16 +1574,16 @@ uuid = "860ef19b-820b-49d6-a774-d7a799459cd3"
 version = "1.0.2"
 
 [[deps.StanfordAA228V]]
-deps = ["AbstractPlutoDingetjes", "BSON", "Base64", "Distances", "Distributions", "Downloads", "ForwardDiff", "GridInterpolations", "Interpolations", "LazySets", "LinearAlgebra", "Markdown", "Optim", "Parameters", "Pkg", "Plots", "Pluto", "PlutoUI", "ProgressLogging", "Random", "SignalTemporalLogic", "Statistics", "TOML"]
-git-tree-sha1 = "f981afcdd7bdea2601b181fb044001680cca8247"
+deps = ["AbstractPlutoDingetjes", "BSON", "Base64", "Distributions", "Downloads", "ForwardDiff", "GridInterpolations", "LazySets", "LinearAlgebra", "Markdown", "Optim", "Parameters", "Pkg", "Plots", "Pluto", "PlutoUI", "ProgressLogging", "Random", "SignalTemporalLogic", "Statistics", "TOML"]
+git-tree-sha1 = "5376632ae8604432fd7c8ce7308edf70950c1da8"
 uuid = "6f6e590e-f8c2-4a21-9268-94576b9fb3b1"
-version = "0.1.23"
+version = "0.1.22"
 
 [[deps.StaticArrays]]
 deps = ["LinearAlgebra", "PrecompileTools", "Random", "StaticArraysCore"]
-git-tree-sha1 = "02c8bd479d26dbeff8a7eb1d77edfc10dacabc01"
+git-tree-sha1 = "47091a0340a675c738b1304b58161f3b0839d454"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "1.9.11"
+version = "1.9.10"
 weakdeps = ["ChainRulesCore", "Statistics"]
 
     [deps.StaticArrays.extensions]
@@ -2209,12 +1645,6 @@ weakdeps = ["Adapt", "GPUArraysCore", "KernelAbstractions", "LinearAlgebra", "Sp
     StructArraysSparseArraysExt = "SparseArrays"
     StructArraysStaticArraysExt = "StaticArrays"
 
-[[deps.StructTypes]]
-deps = ["Dates", "UUIDs"]
-git-tree-sha1 = "159331b30e94d7b11379037feeb9b690950cace8"
-uuid = "856f2bd8-1eba-4b0a-8007-ebc267875bd4"
-version = "1.11.0"
-
 [[deps.StyledStrings]]
 uuid = "f489334b-da3d-4c2e-b8f0-e476e12c162b"
 version = "1.11.0"
@@ -2267,9 +1697,9 @@ uuid = "3bb67fe8-82b1-5028-8e26-92a6c54297fa"
 version = "0.11.3"
 
 [[deps.Tricks]]
-git-tree-sha1 = "6cae795a5a9313bbb4f60683f7263318fc7d1505"
+git-tree-sha1 = "7822b97e99a1672bfb1b49b668a6d46d58d8cbcb"
 uuid = "410a4b4d-49e4-4fbc-ab6d-cb71b17b3775"
-version = "0.1.10"
+version = "0.1.9"
 
 [[deps.URIs]]
 git-tree-sha1 = "67db6cc7b3821e19ebe75791a9dd19c9b1188f2b"
@@ -2348,12 +1778,6 @@ git-tree-sha1 = "5db3e9d307d32baba7067b13fc7b5aa6edd4a19a"
 uuid = "2381bf8a-dfd0-557d-9999-79630e7b1b91"
 version = "1.36.0+0"
 
-[[deps.WoodburyMatrices]]
-deps = ["LinearAlgebra", "SparseArrays"]
-git-tree-sha1 = "c1a7aa6219628fcd757dede0ca95e245c5cd9511"
-uuid = "efce3f68-66dc-5838-9240-27a6d6f5f9b6"
-version = "1.0.0"
-
 [[deps.XML2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libiconv_jll", "Zlib_jll"]
 git-tree-sha1 = "a2fccc6559132927d4c5dc183e3e01048c6dcbd6"
@@ -2368,9 +1792,9 @@ version = "1.1.42+0"
 
 [[deps.XZ_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "56c6604ec8b2d82cc4cfe01aa03b00426aac7e1f"
+git-tree-sha1 = "beef98d5aad604d9e7d60b2ece5181f7888e2fd6"
 uuid = "ffd25f8a-64ca-5728-b0f7-c24cf3aae800"
-version = "5.6.4+1"
+version = "5.6.4+0"
 
 [[deps.Xorg_libICE_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -2392,9 +1816,9 @@ version = "1.8.6+3"
 
 [[deps.Xorg_libXau_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "e9216fdcd8514b7072b43653874fd688e4c6c003"
+git-tree-sha1 = "2b0e27d52ec9d8d483e2ca0b72b3cb1a8df5c27a"
 uuid = "0c0b7dd1-d40b-584c-a123-a41640f87eec"
-version = "1.0.12+0"
+version = "1.0.11+3"
 
 [[deps.Xorg_libXcursor_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libXfixes_jll", "Xorg_libXrender_jll"]
@@ -2404,9 +1828,9 @@ version = "1.2.3+0"
 
 [[deps.Xorg_libXdmcp_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "89799ae67c17caa5b3b5a19b8469eeee474377db"
+git-tree-sha1 = "02054ee01980c90297412e4c809c8694d7323af3"
 uuid = "a3789734-cfe1-5b06-b2d0-1dd0d9d62d05"
-version = "1.1.5+0"
+version = "1.1.4+3"
 
 [[deps.Xorg_libXext_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libX11_jll"]
@@ -2446,9 +1870,9 @@ version = "0.9.11+1"
 
 [[deps.Xorg_libpthread_stubs_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "c57201109a9e4c0585b208bb408bc41d205ac4e9"
+git-tree-sha1 = "fee57a273563e273f0f53275101cd41a8153517a"
 uuid = "14d82f49-176c-5ed1-bb49-ad3f5cbd8c74"
-version = "0.1.2+0"
+version = "0.1.1+3"
 
 [[deps.Xorg_libxcb_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "XSLT_jll", "Xorg_libXau_jll", "Xorg_libXdmcp_jll", "Xorg_libpthread_stubs_jll"]
@@ -2512,9 +1936,9 @@ version = "2.39.0+0"
 
 [[deps.Xorg_xtrans_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "6dba04dbfb72ae3ebe5418ba33d087ba8aa8cb00"
+git-tree-sha1 = "b9ead2d2bdb27330545eb14234a2e300da61232e"
 uuid = "c5fb5394-a638-5e4d-96e5-b29de1b5cf10"
-version = "1.5.1+0"
+version = "1.5.0+3"
 
 [[deps.Zlib_jll]]
 deps = ["Libdl"]
@@ -2545,9 +1969,9 @@ version = "0.6.75"
 
 [[deps.ZygoteRules]]
 deps = ["ChainRulesCore", "MacroTools"]
-git-tree-sha1 = "434b3de333c75fc446aa0d19fc394edafd07ab08"
+git-tree-sha1 = "27798139afc0a2afa7b1824c206d5e87ea587a00"
 uuid = "700de1a5-db45-46bc-99cf-38207098b444"
-version = "0.2.7"
+version = "0.2.5"
 
 [[deps.eudev_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "gperf_jll"]
@@ -2610,9 +2034,9 @@ version = "1.18.0+0"
 
 [[deps.libpng_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Zlib_jll"]
-git-tree-sha1 = "055a96774f383318750a1a5e10fd4151f04c29c5"
+git-tree-sha1 = "b7bfd3ab9d2c58c3829684142f5804e4c6499abc"
 uuid = "b53b4c65-9356-5827-b1ea-8c7a1a84506f"
-version = "1.6.46+0"
+version = "1.6.45+0"
 
 [[deps.libvorbis_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Ogg_jll", "Pkg"]
@@ -2658,49 +2082,16 @@ version = "1.4.1+2"
 # ╔═╡ Cell order:
 # ╟─2f308228-2806-4bdf-b7df-e000c6eb277a
 # ╟─19fb47bd-f479-4842-ad51-6f1af88c72f8
-# ╟─d0636784-ce42-4bae-93b8-3da85b7df3e3
-# ╟─4281219b-64e8-475f-a49f-1695e3965735
-# ╟─3b8a023d-16f7-4987-8b3b-ed99d77e63c1
-# ╟─f1598110-c482-4d37-95a4-f68d886498d6
-# ╟─2d4830a3-0081-4485-91e3-4a27e198dc2c
-# ╟─16299665-778a-402b-aae9-4a7a007d8cec
-# ╟─fa3494a9-cdcc-4189-99fa-00b2d823736f
-# ╟─ee23b7b4-afcd-44ed-a926-5b718b4b9847
-# ╠═5a381b38-9b53-4b3b-992f-a6c1ac752c90
-# ╟─12ce848c-8150-4243-8065-b2a91a840240
-# ╟─dbc6540a-80b9-4da5-8971-ae68fd8ccafe
-# ╟─1f037a1d-bf7e-4d8d-8f85-0ef9213300be
-# ╠═9568bfc4-c19b-4529-8af5-0e7c7181ed02
-# ╟─90f6250e-6721-4a4e-8a8e-d04c65d9b520
-# ╟─cd7544de-f94e-4a0a-ba8b-4c2613a68661
-# ╟─7f9e81a1-194a-4d70-a6e9-eb390e3a54e0
-# ╟─9e36e46e-80ba-4b5f-b944-ef30e09bb7e8
-# ╟─d93a40e7-c3ee-407f-ae86-c749042a17f0
-# ╟─79906431-e878-4e24-bd06-06240f9f811f
-# ╟─946752eb-6ba1-4adc-aa59-a98d4b7862f5
-# ╟─3af3855e-d6db-4580-8a10-4cda112a1bc3
-# ╠═0cd26f21-5848-457a-9b4b-dd0888133d76
-# ╟─62685bbf-60f4-4c25-89c8-6fe976e8b015
-# ╠═36f0e5a2-586e-4351-84bd-c25d20d2ef05
-# ╟─0be851b5-7017-4b40-96c3-434086bcdf81
-# ╠═1bd2e1e8-d57a-4894-9bf6-7a30b947a338
-# ╟─43daf5f4-02e7-411d-96d6-42806617783e
-# ╟─7b37a30e-fec7-4854-a48e-b9eb036758e1
-# ╟─c9f2eb66-e20c-4dc3-ae52-10d27c44f1ee
-# ╟─18347b9e-cc0d-424a-875c-c4714a9d52e0
-# ╟─d2119119-98e4-4425-b042-004fb0dab42f
-# ╟─790bc106-244d-4b77-9d60-505424c69779
-# ╟─b165e3c6-7b72-4513-a2a6-cd55c73a9ce7
-# ╟─9246a06d-8fd0-4a92-b3f7-3fdd9ca821ae
-# ╟─49c97ae9-54fa-4017-8286-672c9a5e344b
-# ╟─93b6bab4-17d0-44bf-ba28-a1423da89bbc
+# ╟─8c585f15-f466-4749-8b22-3c02b2714762
+# ╟─3c908f20-f5bb-4a38-972a-1ad9bcb522af
+# ╟─77b216cc-fb2c-42fc-adff-606402e19c5a
+# ╟─a6d2dcdc-f2e2-4619-a7a6-45d5414a6db1
+# ╟─7e84dd5c-3f0e-40c5-b2af-4bf234aa5791
+# ╟─3018c77c-ca89-4c46-aa27-48266015c586
+# ╟─fd8ae768-88c7-419b-bd44-bfc2bec84795
+# ╟─17a52dd4-ec23-4e9a-a9aa-fb811034fc69
 # ╟─39b9a784-2c8b-46a2-a414-1252638ade67
-# ╟─f58a6427-a0f5-4a0b-ac01-6f017d12bcc7
-# ╟─d1d6a030-c02c-484e-932d-8d5ada036055
-# ╟─09441084-4891-49ea-a8b0-a4ed6692c169
-# ╟─1b6bb492-36bd-48b2-9a6b-d83e1eab1040
 # ╟─480491fb-9f19-49ee-8f0f-0bd8c1c352d8
 # ╟─06edfbee-5d16-4e83-a4f9-caf5bd901c00
-# ╟─bb3d0fe1-d1c6-47ef-bec4-82c1ace1c6ed
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
